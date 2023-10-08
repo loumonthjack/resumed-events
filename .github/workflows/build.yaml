@@ -51,5 +51,4 @@ jobs:
             task-definition: ./ecs-task-def.json
             service: resumed-events-service
             cluster: resumed-events
-            wait-for-service-stability: true
       
