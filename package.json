@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start:dev": "nodemon -r dotenv/config ./src/index.ts",
-    "start": "node dist/index.js",
+    "start": "ts-node src/index.ts",
     "build": "tsc"
   },
   "repository": {
