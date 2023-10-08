@@ -35,15 +35,15 @@ jobs:
             ECR_REPOSITORY: resumed-events
             IMAGE_TAG: ${{ github.sha }}
           run: |
-            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"  
+            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+            docker tag $ECR_REGISTRY/$ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
         - name: Set up Amazon ECS action
           uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
             task-definition: ./ecs-task-def.json
             container-name: resumed-events-service
-            image: ${{ steps.login-ecr.outputs.registry }}/resumed-events:${{ github.sha }}
+            image: ${{ steps.login-ecr.outputs.registry }}/resumed-events:lates
 
         - name: Deploy to Amazon ECS service
           uses: aws-actions/amazon-ecs-deploy-task-definition@v1

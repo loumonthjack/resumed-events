@@ -1,39 +1,41 @@
 {
-                "family": "resumed-events",
-                "containerDefinitions": [
-                  {
-                    "name": "resumed-events-service",
-                    "image": "412325484896.dkr.ecr.us-west-2.amazonaws.com/resumed-events:latest",
-                    "cpu": 0,
-                    "portMappings": [
-                      {
-                        "name": "resumed-events-service-4000-tcp",
-                        "containerPort": 4000,
-                        "hostPort": 4000,
-                        "protocol": "tcp",
-                        "appProtocol": "http"
-                      }
-                    ],
-                    "essential": true,
-                    "environmentFiles": [
-                      {
-                        "type": "s3",
-                        "value": "arn:aws:s3:::api.resumed.events/events.env"
-                      }
-                    ],
-                    "mountPoints": [],
-                    "volumesFrom": [],
-                    "ulimits": []
-                  }
-                ],
-                "taskRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
-                "executionRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
-                "networkMode": "awsvpc",
-                "requiresCompatibilities": ["FARGATE"],
-                "cpu": "2048",
-                "memory": "8192",
-                "runtimePlatform": {
-                  "cpuArchitecture": "X86_64",
-                  "operatingSystemFamily": "LINUX"
+    "family": "resumed-event-task",
+    "containerDefinitions": [
+        {
+            "name": "resumed-events-service",
+            "image": "412325484896.dkr.ecr.us-west-2.amazonaws.com/resumed-events:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "resumed-events-service-4000-tcp",
+                    "containerPort": 4000,
+                    "hostPort": 4000,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
                 }
-              }
+            ],
+            "essential": true,
+            "environment": [],
+            "environmentFiles": [
+                {
+                    "value": "arn:aws:s3:::api.resumed.events/events.env",
+                    "type": "s3"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": []
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "2048",
+    "memory": "4096",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}
