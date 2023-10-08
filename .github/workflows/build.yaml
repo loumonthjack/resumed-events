@@ -42,7 +42,7 @@ jobs:
           uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
             task-definition: ./ecs-task-def.json
-            container-name: resumed-events
+            container-name: resumed-events-service
             image: ${{ steps.login-ecr.outputs.registry }}/resumed-events:${{ github.sha }}
     
         - name: Deploy to Amazon ECS service
