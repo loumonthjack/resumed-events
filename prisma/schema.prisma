@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id           String           @id @unique
+  name          String 
+  email          String
+  logo           String?
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime        @default(now())
+  description    String?
+  terms          Boolean          @default(false)
+  type           String?
+  tempKey        String?        @unique
+  theme          Theme?          @default(LIGHT)
+  isPaid         Boolean         @default(false)
+  EventAttendant EventAttendant[]
+}
+
+enum Theme {
+  LIGHT
+  DARK
+}
+
+model EventAttendant {
+  id      String @id @default(uuid())
+  url     String
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+}
+
+model Subscriber {
+  id      String @id @default(uuid())
+  email   String @unique
+  unsubscribedAt DateTime?
+  createdAt DateTime @default(now())
+  isSubscribed Boolean @default(true)
+}
+

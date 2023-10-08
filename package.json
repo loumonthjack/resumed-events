@@ -1,0 +1,47 @@
+{
+  "name": "resumed-qr",
+  "version": "1.0.0",
+  "description": "create dynamic qr slideshow for attendees",
+  "main": "index.js",
+  "scripts": {
+    "start:dev": "nodemon -r dotenv/config ./src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loumonthjack/resumed-events.git"
+  },
+  "author": "loumonthjack",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/loumonthjack/resumed-events/issues"
+  },
+  "homepage": "https://github.com/loumonthjack/resumed-events#readme",
+  "dependencies": {
+    "@prisma/client": "^5.4.1",
+    "@sendgrid/mail": "^7.7.0",
+    "@types/qrcode": "^1.5.2",
+    "aws-sdk": "^2.1472.0",
+    "cors": "^2.8.5",
+    "cuid": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.0",
+    "express-sslify": "^1.2.0",
+    "helmet": "^7.0.0",
+    "multer": "^1.4.5-lts.1",
+    "mustache-express": "^1.3.2",
+    "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "@types/multer": "^1.4.8",
+    "@types/node": "^20.8.3",
+    "dotenv": "^16.3.1",
+    "nodemon": "^3.0.1",
+    "prisma": "^5.4.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "keywords": []
+}
