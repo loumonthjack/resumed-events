@@ -13,8 +13,6 @@
             },
             "name": "resumed-events-service",
             "image": "412325484896.dkr.ecr.us-west-2.amazonaws.com/resumed-events:latest",
-            "cpu": 100,
-            "memory": 500,
             "portMappings": [
                 {
                     "name": "resumed-events-service-4000-tcp",
@@ -43,7 +41,7 @@
         "FARGATE"
     ],
     "cpu": "2048",
-    "memory": "4096",
+    "memory": "8192",
     "runtimePlatform": {
         "cpuArchitecture": "X86_64",
         "operatingSystemFamily": "LINUX"
