@@ -15,41 +15,60 @@
                 }
             ],
             "essential": true,
-            "environment": [{
-                "name": "NODE_ENV",
-                "value": "$NODE_ENV"
-            },{
-                "name": "PORT",
-                "value": "$PORT"
-            },{
-                "name": "DATABASE_URL",
-                "value": "$DATABASE_URL"
-            },{
-                "name": "JWT_SECRET_KEY",
-                "value": "$JWT_SECRET_KEY"
-            },{
-                "name":"STRIPE_WEBHOOK_KEY_TEST",
-                "value":"$STRIPE_WEBHOOK_KEY_TEST"
-            },{
-                "name": "STRIPE_SECRET_KEY_TEST",
-                "value": "$STRIPE_SECRET_KEY_TEST"
-            },
-            {
-                "name": "SENDGRID_API_KEY",
-                "value": "$SENDGRID_API_KEY"
-            },
-            {
-                "name": "SENDGRID_FROM_EMAIL",
-                "value": "$SENDGRID_FROM_EMAIL"
-            },
-            {
-                "name":"AWS_BUCKET_NAME",
-                "value":"$AWS_BUCKET_NAME"
-            },{
-                "name": "DOMAIN_NAME",
-                "value": "$DOMAIN_NAME"
-            }
-        ],
+            "environment": [
+                {
+                    "name": "NODE_ENV",
+                    "value": "VAR_1"
+                },
+                {
+                    "name": "PORT",
+                    "value": "VAR_2"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "value": "VAR_3"
+                },
+                {
+                    "name": "JWT_SECRET_KEY",
+                    "value": "VAR_4"
+                },
+                {
+                    "name": "STRIPE_WEBHOOK_KEY_TEST",
+                    "value": "VAR_5"
+                },
+                {
+                    "name": "STRIPE_SECRET_KEY_TEST",
+                    "value": "VAR_6"
+                },
+                {
+                    "name": "SENDGRID_API_KEY",
+                    "value": "VAR_7"
+                },
+                {
+                    "name": "SENDGRID_FROM_EMAIL",
+                    "value": "VAR_8"
+                },
+                {
+                    "name": "AWS_BUCKET_NAME",
+                    "value": "VAR_9"
+                },
+                {
+                    "name": "AWS_ACCESS_KEY_ID",
+                    "value": "VAR_10"
+                },
+                {
+                    "name": "AWS_SECRET_ACCESS_KEY",
+                    "value": "VAR_11"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "value": "VAR_12"
+                },
+                {
+                    "name": "DOMAIN_NAME",
+                    "value": "VAR_13"
+                }
+            ],
             "mountPoints": [],
             "volumesFrom": [],
             "ulimits": []

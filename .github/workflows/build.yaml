@@ -39,19 +39,19 @@ jobs:
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         - name: Replace environment variables in task definition
           run: |
-            sed -i "s/$NODE_ENV/${{ secrets.NODE_ENV }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$PORT/${{ secrets.PORT }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$DATABASE_URL/${{ secrets.DATABASE_URL }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$JWT_SECRET_KEY/${{ secrets.JWT_SECRET_KEY }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$STRIPE_WEBHOOK_KEY_TEST/${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$STRIPE_SECRET_KEY_TEST/${{ secrets.STRIPE_SECRET_KEY_TEST }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$SENDGRID_API_KEY/${{ secrets.SENDGRID_API_KEY }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$SENDGRID_FROM_EMAIL/${{ secrets.SENDGRID_FROM_EMAIL }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$AWS_BUCKET_NAME/${{ secrets.AWS_BUCKET_NAME }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$AWS_ACCESS_KEY_ID/${{ secrets.AWS_ACCESS_KEY_ID }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$AWS_SECRET_ACCESS_KEY/${{ secrets.AWS_SECRET_ACCESS_KEY }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$AWS_REGION/${{ secrets.AWS_REGION }}/g" ${{ github.workspace }}/ecs-task-def.json
-            sed -i "s/$DOMAIN_NAME/${{ secrets.DOMAIN_NAME }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_1}}/${{ secrets.NODE_ENV }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_2}}/${{ secrets.PORT }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_3}}/${{ secrets.DATABASE_URL }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_4}}/${{ secrets.JWT_SECRET_KEY }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_5}}/${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_6}}/${{ secrets.STRIPE_SECRET_KEY_TEST }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_7}}${{ secrets.SENDGRID_API_KEY }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_8}}/${{ secrets.SENDGRID_FROM_EMAIL }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_9}}/${{ secrets.AWS_BUCKET_NAME }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_10}}/${{ secrets.AWS_ACCESS_KEY_ID }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_11}}/${{ secrets.AWS_SECRET_ACCESS_KEY }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_12}}/${{ secrets.AWS_REGION }}/g" ${{ github.workspace }}/ecs-task-def.json
+            sed -i "s/{{VAR_13}}/${{ secrets.DOMAIN_NAME }}/g" ${{ github.workspace }}/ecs-task-def.json
         - name: Set up Amazon ECS action
           uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
