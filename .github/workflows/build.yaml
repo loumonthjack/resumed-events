@@ -60,55 +60,55 @@ jobs:
                         "environment": [
                             {
                                 "name": "NODE_ENV",
-                                "value": "${{ secrets.NODE_ENV }}"
+                                "value": `${{ secrets.NODE_ENV }}`
                             },
                             {
                                 "name": "PORT",
-                                "value": "${{ secrets.PORT }}"
+                                "value": `${{ secrets.PORT }}`
                             },
                             {
                                 "name": "DATABASE_URL",
-                                "value": "${{ secrets.DATABASE_URL }}"
+                                "value": `${{ secrets.DATABASE_URL }}`
                             },
                             {
                                 "name": "JWT_SECRET_KEY",
-                                "value": "${{ secrets.JWT_SECRET_KEY }}"
+                                "value": `${{ secrets.JWT_SECRET_KEY }}`
                             },
                             {
                                 "name": "STRIPE_WEBHOOK_KEY_TEST",
-                                "value": "${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}"
+                                "value": `${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}`
                             },
                             {
                                 "name": "STRIPE_SECRET_KEY_TEST",
-                                "value": "${{ secrets.STRIPE_SECRET_KEY_TEST }}"
+                                "value": `${{ secrets.STRIPE_SECRET_KEY_TEST }}`
                             },
                             {
                                 "name": "SENDGRID_API_KEY",
-                                "value": "${{ secrets.SENDGRID_API_KEY }}"
+                                "value": `${{ secrets.SENDGRID_API_KEY }}`
                             },
                             {
                                 "name": "SENDGRID_FROM_EMAIL",
-                                "value": "${{ secrets.SENDGRID_FROM_EMAIL }}"
+                                "value": `${{ secrets.SENDGRID_FROM_EMAIL }}`
                             },
                             {
                                 "name": "AWS_BUCKET_NAME",
-                                "value": "${{ secrets.AWS_BUCKET_NAME }}"
+                                "value": `${{ secrets.AWS_BUCKET_NAME }}`
                             },
                             {
                                 "name": "AWS_ACCESS_KEY_ID",
-                                "value": "${{ secrets.AWS_ACCESS_KEY_ID }}"
+                                "value": `${{ secrets.AWS_ACCESS_KEY_ID }}`
                             },
                             {
                                 "name": "AWS_SECRET_ACCESS_KEY",
-                                "value": "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+                                "value": `${{ secrets.AWS_SECRET_ACCESS_KEY }}`
                             },
                             {
                                 "name": "AWS_REGION",
-                                "value": "${{ secrets.AWS_REGION }}"
+                                "value": `${{ secrets.AWS_REGION }}`
                             },
                             {
                                 "name": "DOMAIN_NAME",
-                                "value": "${{ secrets.DOMAIN_NAME }}"
+                                "value": `${{ secrets.DOMAIN_NAME }}`
                             }
                         ],
                         "mountPoints": [],
