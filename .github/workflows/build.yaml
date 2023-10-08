@@ -44,20 +44,6 @@ jobs:
             task-definition: ./ecs-task-def.json
             container-name: resumed-events-service
             image: ${{ steps.login-ecr.outputs.registry }}/resumed-events:${{ github.sha }}
-            environment-variables: |
-              NODE_ENV=${{ secrets.NODE_ENV }}
-              PORT=${{ secrets.PORT }}
-              DATABASE_URL=${{ secrets.DATABASE_URL }}
-              JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
-              SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
-              SENDGRID_FROM_EMAIL=${{ secrets.SENDGRID_FROM_EMAIL }}
-              STRIPE_SECRET_KEY_TEST=${{ secrets.STRIPE_SECRET_KEY_TEST }}
-              STRIPE_WEBHOOK_KEY_TEST=${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}
-              AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-              AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              AWS_REGION=${{ secrets.AWS_REGION }}
-              AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
-              DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}
 
         - name: Deploy to Amazon ECS service
           uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -65,4 +51,5 @@ jobs:
             task-definition: ./ecs-task-def.json
             service: resumed-events-service
             cluster: resumed-events
+
       
