@@ -37,65 +37,27 @@ jobs:
           run: |
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        - name: Create ecs-task-def.json
-          run: |
-              cat > ecs-task-def.json <<EOF
-              {
-                "family": "resumed-events",
-                "containerDefinitions": [
-                  {
-                    "name": "resumed-events-service",
-                    "image": "412325484896.dkr.ecr.us-west-2.amazonaws.com/resumed-events:latest",
-                    "cpu": 0,
-                    "portMappings": [
-                      {
-                        "name": "resumed-events-service-4000-tcp",
-                        "containerPort": 4000,
-                        "hostPort": 4000,
-                        "protocol": "tcp",
-                        "appProtocol": "http"
-                      }
-                    ],
-                    "essential": true,
-                    "environment": [
-                      { "name": "NODE_ENV", "value": "${{ secrets.NODE_ENV }}" },
-                      { "name": "PORT", "value": "${{ secrets.PORT }}" },
-                      { "name": "DATABASE_URL", "value": "${{ secrets.DATABASE_URL }}" },
-                      { "name": "JWT_SECRET_KEY", "value": "${{ secrets.JWT_SECRET_KEY }}" },
-                      { "name": "STRIPE_WEBHOOK_KEY_TEST", "value": "${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}" },
-                      { "name": "STRIPE_SECRET_KEY_TEST", "value": "${{ secrets.STRIPE_SECRET_KEY_TEST }}" },
-                      { "name": "SENDGRID_API_KEY", "value": "${{ secrets.SENDGRID_API_KEY }}" },
-                      { "name": "SENDGRID_FROM_EMAIL", "value": "${{ secrets.SENDGRID_FROM_EMAIL }}" },
-                      { "name": "AWS_BUCKET_NAME", "value": "${{ secrets.AWS_BUCKET_NAME }}" },
-                      { "name": "AWS_ACCESS_KEY_ID", "value": "${{ secrets.AWS_ACCESS_KEY_ID }}" },
-                      { "name": "AWS_SECRET_ACCESS_KEY", "value": "${{ secrets.AWS_SECRET_ACCESS_KEY }}" },
-                      { "name": "AWS_REGION", "value": "${{ secrets.AWS_REGION }}" },
-                      { "name": "DOMAIN_NAME", "value": "${{ secrets.DOMAIN_NAME }}" }
-                    ],
-                    "mountPoints": [],
-                    "volumesFrom": [],
-                    "ulimits": []
-                  }
-                ],
-                "taskRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
-                "executionRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
-                "networkMode": "awsvpc",
-                "requiresCompatibilities": ["FARGATE"],
-                "cpu": "2048",
-                "memory": "8192",
-                "runtimePlatform": {
-                  "cpuArchitecture": "X86_64",
-                  "operatingSystemFamily": "LINUX"
-                }
-              }
-              EOF  
-              
+            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"  
         - name: Set up Amazon ECS action
           uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
             task-definition: ./ecs-task-def.json
             container-name: resumed-events-service
             image: ${{ steps.login-ecr.outputs.registry }}/resumed-events:${{ github.sha }}
+            environment-variables: |
+              NODE_ENV=${{ secrets.NODE_ENV }}
+              PORT=${{ secrets.PORT }}
+              DATABASE_URL=${{ secrets.DATABASE_URL }}
+              JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+              SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
+              SENDGRID_FROM_EMAIL=${{ secrets.SENDGRID_FROM_EMAIL }}
+              STRIPE_SECRET_KEY_TEST=${{ secrets.STRIPE_SECRET_KEY_TEST }}
+              STRIPE_WEBHOOK_KEY_TEST=${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}
+              AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+              AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              AWS_REGION=${{ secrets.AWS_REGION }}
+              AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
+              DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}
 
         - name: Deploy to Amazon ECS service
           uses: aws-actions/amazon-ecs-deploy-task-definition@v1
