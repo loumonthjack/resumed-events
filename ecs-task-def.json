@@ -17,6 +17,7 @@
                     "essential": true,
                     "environmentFiles": [
                       {
+                        "type": "s3",
                         "value": "arn:aws:s3:::api.resumed.events/events.env"
                       }
                     ],
