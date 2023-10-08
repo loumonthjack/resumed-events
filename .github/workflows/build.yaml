@@ -43,90 +43,49 @@ jobs:
               {
                 "family": "resumed-events",
                 "containerDefinitions": [
-                    {
-                        "name": "resumed-events-service",
-                        "image": "412325484896.dkr.ecr.us-west-2.amazonaws.com/resumed-events:latest",
-                        "cpu": 0,
-                        "portMappings": [
-                            {
-                                "name": "resumed-events-service-4000-tcp",
-                                "containerPort": 4000,
-                                "hostPort": 4000,
-                                "protocol": "tcp",
-                                "appProtocol": "http"
-                            }
-                        ],
-                        "essential": true,
-                        "environment": [
-                            {
-                                "name": "NODE_ENV",
-                                "value": `${{ secrets.NODE_ENV }}`
-                            },
-                            {
-                                "name": "PORT",
-                                "value": `${{ secrets.PORT }}`
-                            },
-                            {
-                                "name": "DATABASE_URL",
-                                "value": `${{ secrets.DATABASE_URL }}`
-                            },
-                            {
-                                "name": "JWT_SECRET_KEY",
-                                "value": `${{ secrets.JWT_SECRET_KEY }}`
-                            },
-                            {
-                                "name": "STRIPE_WEBHOOK_KEY_TEST",
-                                "value": `${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}`
-                            },
-                            {
-                                "name": "STRIPE_SECRET_KEY_TEST",
-                                "value": `${{ secrets.STRIPE_SECRET_KEY_TEST }}`
-                            },
-                            {
-                                "name": "SENDGRID_API_KEY",
-                                "value": `${{ secrets.SENDGRID_API_KEY }}`
-                            },
-                            {
-                                "name": "SENDGRID_FROM_EMAIL",
-                                "value": `${{ secrets.SENDGRID_FROM_EMAIL }}`
-                            },
-                            {
-                                "name": "AWS_BUCKET_NAME",
-                                "value": `${{ secrets.AWS_BUCKET_NAME }}`
-                            },
-                            {
-                                "name": "AWS_ACCESS_KEY_ID",
-                                "value": `${{ secrets.AWS_ACCESS_KEY_ID }}`
-                            },
-                            {
-                                "name": "AWS_SECRET_ACCESS_KEY",
-                                "value": `${{ secrets.AWS_SECRET_ACCESS_KEY }}`
-                            },
-                            {
-                                "name": "AWS_REGION",
-                                "value": `${{ secrets.AWS_REGION }}`
-                            },
-                            {
-                                "name": "DOMAIN_NAME",
-                                "value": `${{ secrets.DOMAIN_NAME }}`
-                            }
-                        ],
-                        "mountPoints": [],
-                        "volumesFrom": [],
-                        "ulimits": []
-                    }
+                  {
+                    "name": "resumed-events-service",
+                    "image": "412325484896.dkr.ecr.us-west-2.amazonaws.com/resumed-events:latest",
+                    "cpu": 0,
+                    "portMappings": [
+                      {
+                        "name": "resumed-events-service-4000-tcp",
+                        "containerPort": 4000,
+                        "hostPort": 4000,
+                        "protocol": "tcp",
+                        "appProtocol": "http"
+                      }
+                    ],
+                    "essential": true,
+                    "environment": [
+                      { "name": "NODE_ENV", "value": "${{ secrets.NODE_ENV }}" },
+                      { "name": "PORT", "value": "${{ secrets.PORT }}" },
+                      { "name": "DATABASE_URL", "value": "${{ secrets.DATABASE_URL }}" },
+                      { "name": "JWT_SECRET_KEY", "value": "${{ secrets.JWT_SECRET_KEY }}" },
+                      { "name": "STRIPE_WEBHOOK_KEY_TEST", "value": "${{ secrets.STRIPE_WEBHOOK_KEY_TEST }}" },
+                      { "name": "STRIPE_SECRET_KEY_TEST", "value": "${{ secrets.STRIPE_SECRET_KEY_TEST }}" },
+                      { "name": "SENDGRID_API_KEY", "value": "${{ secrets.SENDGRID_API_KEY }}" },
+                      { "name": "SENDGRID_FROM_EMAIL", "value": "${{ secrets.SENDGRID_FROM_EMAIL }}" },
+                      { "name": "AWS_BUCKET_NAME", "value": "${{ secrets.AWS_BUCKET_NAME }}" },
+                      { "name": "AWS_ACCESS_KEY_ID", "value": "${{ secrets.AWS_ACCESS_KEY_ID }}" },
+                      { "name": "AWS_SECRET_ACCESS_KEY", "value": "${{ secrets.AWS_SECRET_ACCESS_KEY }}" },
+                      { "name": "AWS_REGION", "value": "${{ secrets.AWS_REGION }}" },
+                      { "name": "DOMAIN_NAME", "value": "${{ secrets.DOMAIN_NAME }}" }
+                    ],
+                    "mountPoints": [],
+                    "volumesFrom": [],
+                    "ulimits": []
+                  }
                 ],
                 "taskRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
                 "executionRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
                 "networkMode": "awsvpc",
-                "requiresCompatibilities": [
-                    "FARGATE"
-                ],
+                "requiresCompatibilities": ["FARGATE"],
                 "cpu": "2048",
                 "memory": "8192",
                 "runtimePlatform": {
-                    "cpuArchitecture": "X86_64",
-                    "operatingSystemFamily": "LINUX"
+                  "cpuArchitecture": "X86_64",
+                  "operatingSystemFamily": "LINUX"
                 }
               }
               EOF  
