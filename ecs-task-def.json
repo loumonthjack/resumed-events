@@ -4,7 +4,18 @@
         {
             "name": "resumed-events-service",
             "image": "412325484896.dkr.ecr.us-west-2.amazonaws.com/resumed-events:latest",
-            "cpu": 0,
+            "cpu": 100,
+            "memory": 500,
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "curl -f http://localhost:4000/health-check || exit 1"
+                ],
+                "interval": 30,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 60
+            },
             "portMappings": [
                 {
                     "name": "resumed-events-service-4000-tcp",
