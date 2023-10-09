@@ -28,10 +28,11 @@ const expressServer = async () => {
     next();
   });
   if (isProd) app.use(sslRedirect());
+  if (isProd) {
     app.use(cors({
       origin: (origin: any, callback: any) => {
         console.log('origin', origin);
-        if (!origin || [FULL_SERVER_URL, "resumed.events"].includes(origin)) {
+        if (!origin || [FULL_SERVER_URL].includes(origin)) {
           callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));
@@ -39,7 +40,7 @@ const expressServer = async () => {
       },
       credentials: true,
     }));
-  
+  }
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
