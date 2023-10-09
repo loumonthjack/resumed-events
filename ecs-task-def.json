@@ -38,7 +38,7 @@
     "executionRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
     "networkMode": "host",
     "requiresCompatibilities": [
-        "FARGATE"
+        "EC2"
     ],
     "cpu": "2048",
     "memory": "8192",
