@@ -31,7 +31,7 @@ const expressServer = async () => {
     app.use(cors({
       origin: (origin: any, callback: any) => {
         console.log('origin', origin);
-        if (!origin || [FULL_SERVER_URL].includes(origin)) {
+        if (!origin || [FULL_SERVER_URL, "resumed.events"].includes(origin)) {
           callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));
