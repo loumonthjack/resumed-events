@@ -49,7 +49,7 @@ jobs:
           uses: aws-actions/amazon-ecs-deploy-task-definition@v1
           with:
             task-definition: ./ecs-task-def.json
-            service: resumed-event-service
-            cluster: resumed-events
+            service: resumed-events-service
+            cluster: resumed-events-cluster
 
       

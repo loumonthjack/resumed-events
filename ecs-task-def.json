@@ -1,18 +1,10 @@
 {
-    "family": "resumed-event-task",
+    "family": "resumed-task",
     "containerDefinitions": [
         {
-            "logConfiguration": {
-                "logDriver": "awslogs",
-                "options": {
-                    "awslogs-group": "/ecs/resumed-events-service/containers",
-                    "awslogs-region": "us-west-2",
-                    "awslogs-create-group": "true",
-                    "awslogs-stream-prefix": "ecs"
-                }
-            },
             "name": "resumed-events-service",
             "image": "412325484896.dkr.ecr.us-west-2.amazonaws.com/resumed-events:latest",
+            "cpu": 0,
             "portMappings": [
                 {
                     "name": "resumed-events-service-4000-tcp",
@@ -31,7 +23,16 @@
                 }
             ],
             "mountPoints": [],
-            "volumesFrom": []
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/resumed-events-service/containers",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
         }
     ],
     "taskRoleArn": "arn:aws:iam::412325484896:role/ecsTaskExecutionRole",
@@ -40,7 +41,6 @@
     "requiresCompatibilities": [
         "EC2"
     ],
-    "cpu": "2048",
     "memory": "8192",
     "runtimePlatform": {
         "cpuArchitecture": "X86_64",
