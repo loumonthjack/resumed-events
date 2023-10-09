@@ -13,7 +13,7 @@ const expressServer = async () => {
   const app = express();
   setEnvironment();
   checkEnvironmentVariables();
-  app.use(helmet());
+  //app.use(helmet());
   app.use(rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -28,7 +28,6 @@ const expressServer = async () => {
     next();
   });
   if (isProd) app.use(sslRedirect());
-  if (isProd) {
     app.use(cors({
       origin: (origin: any, callback: any) => {
         console.log('origin', origin);
@@ -40,7 +39,7 @@ const expressServer = async () => {
       },
       credentials: true,
     }));
-  }
+  
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
