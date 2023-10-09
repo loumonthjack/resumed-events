@@ -24,15 +24,13 @@ async function handleCharge(event: Request['body']) {
             isPaid: true,
         },
     });
-    const durationInDays = 7; // example duration
-    const startDate = new Date(user.startDate);
-    const endDate = new Date(startDate.getTime() + (durationInDays * 24 * 60 * 60 * 1000)); // calculate end date based on start date and duration
+    // send onboarding instructions
     await Messenger.sendEventWelcomeEmail(event.data.object.billing_details.email, {
         event: {
             id: user.id,
             name: user.name.toLowerCase(),
-            startDate: startDate.toISOString(), // convert date to string
-            endDate: endDate.toISOString(), // convert date to string
+            startDate: user.startDate.toISOString(),
+            endDate: user.endDate.toISOString(),
         },
     });
     return true;

@@ -13,7 +13,7 @@ const expressServer = async () => {
   const app = express();
   setEnvironment();
   checkEnvironmentVariables();
-  //app.use(helmet());
+  app.use(helmet());
   app.use(rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -46,7 +46,7 @@ const expressServer = async () => {
   app.use(networkingRoute);
   app.use(webhookRoute);
 
-  //app.all('*', (req: any, res: any) => res.status(404).send(renderTemplate('error')));
+  app.all('*', (req: any, res: any) => res.status(404).send(renderTemplate('error')));
 
   app.listen(process.env.PORT || 3000, () => console.log(`Server listening running ${FULL_SERVER_URL}`));
 };

@@ -1,8 +1,8 @@
 import sendGrid from '@sendgrid/mail';
 import {renderTemplate} from '../templates';
 import {FULL_SERVER_URL} from '../constants';
-import cuid from "cuid";
 import prisma from './db-client';
+import { generateCUID } from '../helper';
 
 class Sendgrid {
   private client;
@@ -67,11 +67,7 @@ class Sendgrid {
       };
     }
   ) {
-    const generateCUID = () => {
-        // use cuid to generate a unique id
-        return cuid()
-      
-    };
+    
     // update event with code
     const code = generateCUID();
     const event = await prisma.event.update({
