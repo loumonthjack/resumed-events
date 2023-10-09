@@ -13,7 +13,7 @@ const expressServer = async () => {
   const app = express();
   setEnvironment();
   checkEnvironmentVariables();
-  //app.use(helmet());
+  app.use(helmet());
   app.use(rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -22,7 +22,11 @@ const expressServer = async () => {
 
   app.engine('mustache', mustacheExpress());
   app.set('view engine', 'mustache');
-
+  app.use((req, res, next) => {
+    console.log(req.hostname)
+    console.log(req.rawHeaders)
+    next();
+  });
   if (isProd) app.use(sslRedirect());
   if (isProd) {
     app.use(cors({
