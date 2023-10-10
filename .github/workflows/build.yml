@@ -17,9 +17,19 @@ jobs:
       uses: actions/checkout@v2
     
     - name: See Directory
-      run: pwd && ls -la 
+      run: cd /home/app/resumed-events
+
+    - name: Set Permissions
+      run: sudo chown -R app:app /home/app/resumed-events
       
     - name: Pull Latest Changes (if any)
       run: git pull
+    
+    - name: Check for Running PM2 Process
+      run: pm2 stop all || true
+
+    - name: Run PM2 Process
+      run: pm2 start npm --name "app" -- start
+    
 
 
