@@ -63,6 +63,7 @@ jobs:
           file: ./Dockerfile
 
   deploy:
+    needs: build-and-push
     runs-on: ubuntu-latest
     environment: production
 
