@@ -61,7 +61,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ steps.prep.outputs.BUILD_ID }}
           labels: ${{ steps.meta.outputs.labels }}
           file: ./Dockerfile
-          
+
   deploy:
     runs-on: ubuntu-latest
     environment: production
@@ -86,5 +86,4 @@ jobs:
             # 1. Pull the latest code from the repo.
             git pull
             npx prisma db push
-            bash ~/scripts/my-app-deploy.sh
           '
