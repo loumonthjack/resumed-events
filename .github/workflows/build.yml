@@ -20,7 +20,7 @@ jobs:
       run: cd /home/app/resumed-events
 
     - name: Set Permissions
-      run: sudo chown -R app:app /home/app/resumed-events
+      run: sudo chown -R $(whoami):$(whoami) /home/app/resumed-events
       
     - name: Pull Latest Changes (if any)
       run: git pull
