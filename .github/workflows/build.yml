@@ -1,4 +1,4 @@
-name: Build API
+name: Deploy to Lightsail
 
 on:
   workflow_dispatch:
@@ -7,34 +7,42 @@ on:
     tags:
       - "v*.*.*"
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/loumonthjack/resumed-events
-
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: production
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    - name: Pull Latest Changes (if any)
+      run: git pull origin main
 
-      - name: SSH to Host
-        env:
-          AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY  }}
-          AWS_HOSTNAME: ${{ secrets.AWS_HOSTNAME }}
-          AWS_USERNAME: ${{ secrets.AWS_USERNAME  }}
+    - name: Deploy Changes
+      run: |
+        # Assuming you have a deployment script or commands to restart your service
+        # Restart your service/application if necessary
+        # For example, if you're using PM2 for a Node.js application:
+        # pm2 restart all
+        
+        npx prisma db pushname: Deploy to Lightsail
 
-        run: |
-          echo "$AWS_PRIVATE_KEY" > private_key && chmod 600 private_key
-          ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USERNAME}@${AWS_HOSTNAME} '
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags:
+      - "v*.*.*"
 
-            # 📌 Start your instance/server related tasks form here.
-            sudo -i
-            pwd
-            cd /home/app/resumed-events 
-            chown -R $(whoami):$(whoami) /home/app/resumed-events
-            git pull
-            npx prisma db push
-          '
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    - name: Pull Latest Changes (if any)
+      run: git pull origin main
