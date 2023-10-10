@@ -25,6 +25,6 @@ jobs:
     - name: Delete PM2 Process
       run: sudo pm2 delete resumed-events
     - name: Pull Latest Code
-      run: sudo git pull origin main
+      run: cd /home/app/resumed-events && git pull
     - name: Start PM2 Process
       run: sudo pm2 start npm --name resumed-events -- run start:dev
