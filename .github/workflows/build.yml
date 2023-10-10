@@ -23,7 +23,7 @@ jobs:
     - name: Check Container Status
       run: cd /home/app/resumed-events
     - name: Delete PM2 Process
-      run: sudo pm2 delete resumed-events
+      run: sudo pm2 delete all
     - name: Pull Latest Code
       run: cd /home/app/resumed-events && git pull
     - name: Start PM2 Process
