@@ -24,6 +24,8 @@ jobs:
       run: cd /home/app/resumed-events
     - name: Stop PM2 Process, only if it exists
       run: sudo pm2 stop resumed-events || true
+    - name: Set Git Perms
+      run: sudo chmod -R u+rw /home/app/resumed-events/.git
     - name: Pull Latest Code
       run: cd /home/app/resumed-events && git pull
     - name: Start PM2 Process
