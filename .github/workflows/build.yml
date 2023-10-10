@@ -16,6 +16,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     
+    - name: Use Root
+      run: sudo -i
+    
     - name: See Directory
       run: cd /home/app/resumed-events
 
@@ -29,7 +32,7 @@ jobs:
       run: pm2 stop all || true
 
     - name: Run PM2 Process
-      run: pm2 start npm --name "app" -- start
+      run: pm2 start npm --name "resumed-events" -- start:dev
     
 
 
