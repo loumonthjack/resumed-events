@@ -83,7 +83,6 @@ jobs:
 
             # 📌 Start your instance/server related tasks form here.
             sudo -i
-            pwd
             cd /home/app/resumed-events/ 
             # 1. Pull the latest code from the repo.
             git pull
