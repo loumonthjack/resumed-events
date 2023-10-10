@@ -84,7 +84,7 @@ jobs:
             # 📌 Start your instance/server related tasks form here.
             sudo -i
             cd /home/app/resumed-events/ 
-            # 1. Pull the latest code from the repo.
+            git config --global --add safe.directory /home/app/resumed-events
             git pull
             npx prisma db push
           '
