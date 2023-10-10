@@ -22,8 +22,8 @@ jobs:
       run: sudo -i 
     - name: Check Container Status
       run: cd /home/app/resumed-events
-    - name: Delete PM2 Process
-      run: sudo pm2 delete all
+    - name: Stop PM2 Process, only if it exists
+      run: sudo pm2 stop resumed-events || true
     - name: Pull Latest Code
       run: cd /home/app/resumed-events && git pull
     - name: Start PM2 Process
