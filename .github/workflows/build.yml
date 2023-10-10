@@ -1,32 +1,91 @@
-name: Deploy API
+name: Build API
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/loumonthjack/resumed-events
 
 jobs:
-  deploy:
-    runs-on: self-hosted
+  build-and-push:
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    environment: production
     steps:
-    - name: Stall  20 seconds
-      run: sudo -i 
-    - name: Check Container Status
-      run: cd /home/app/resumed-events
-    - name: Stop PM2 Process, only if it exists
-      run: sudo pm2 stop resumed-events || true
-    - name: Set Git Perms
-      run: sudo chown -R $(whoami):$(whoami) /home/app/resumed-events
-    - name: Pull Latest Code
-      run: cd /home/app/resumed-events && git pull
-    - name: Start PM2 Process
-      run: sudo pm2 start npm --name resumed-events -- run start:dev
+      - name: Generate build ID
+        id: prep
+        run: |
+          sha=${GITHUB_SHA}
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "::set-output name=BUILD_ID::dev-${sha}" 
+          else
+            echo "::set-output name=BUILD_ID::stable-${sha}" 
+          fi
+      - name: Echo ID
+        run: |
+          echo ${{ github.ref_name }}
+          echo "${{ steps.prep.outputs.BUILD_ID }}"
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Build action
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Github Packages
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.IMAGE_NAME }}
+
+      - name: Build and push image Backend
+        uses: docker/build-push-action@v2
+        with:
+          context: ./
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.prep.outputs.BUILD_ID }}
+          labels: ${{ steps.meta.outputs.labels }}
+          file: ./Dockerfile
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: SSH to Host
+        env:
+          AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY  }}
+          AWS_HOSTNAME: ${{ secrets.AWS_HOSTNAME }}
+          AWS_USERNAME: ${{ secrets.AWS_USERNAME  }}
+
+        run: |
+          echo "$AWS_PRIVATE_KEY" > private_key && chmod 600 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ${AWS_USERNAME}@${AWS_HOSTNAME} '
+
+            # 📌 Start your instance/server related tasks form here.
+            sudo -i
+            pwd
+            cd ~/resumed-events 
+            chown -R $(whoami):$(whoami) /home/app/resumed-events
+            git pull
+            npx prisma db push
+          '
