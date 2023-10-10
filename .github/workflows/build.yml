@@ -15,6 +15,11 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    
+    - name: See Directory
+      run: pwd && ls -la 
       
     - name: Pull Latest Changes (if any)
-      run: git pull origin main
+      run: git pull
+
+
