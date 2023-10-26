@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="utf-8" />
+    <title> {{event.displayName}} | QR Portal Landing </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        content="Resumed Events | Homepage - Software that provide event organizers seamless qr code generation for attendees to connect!"
+        name="description" />
+    <meta content="Resumed" name="author" />
+    <!-- no index -->
+    <meta name="robots" content="noindex">
+    <meta property="og:url" content="https://resumed.events/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Resumed Events | Intro Page" />
+    <meta property="og:description"
+        content="Resumed Events | Intro page - Software that provide event organizers seamless qr code generation for attendees to connect!" />
+    <meta property="og:image" content="{{CDN}}/assets/images/logo.png" />
+    <!-- favicon -->
+    <link rel="shortcut icon" href="{{AWS_BUCKET_NAME}}assets/images/favicon.ico">
+
+    <!-- Style css -->
+
+
+    <!-- Style css -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.css" rel="stylesheet" />
+
+</head>
+
+<body
+    class="bg-center bg-no-repeat bg-[url('https://flowbite.s3.amazonaws.com/docs/jumbotron/conference.jpg')] bg-gray-700 bg-blend-multiply">
+
+
+    <br />
+    <br />
+    <br />
+    <div class="px-4 mx-auto max-w-screen-xl text-center py-24 lg:py-56">
+        <h1 class="mb-4 text-4xl font-extrabold tracking-tight leading-none text-white md:text-5xl lg:text-6xl">
+            Introducing {{event.displayName}} <br />Social Portal</h1>
+        <p class="mb-8 text-lg font-normal text-gray-300 lg:text-xl sm:px-16 lg:px-48">Connect with Other Attendees
+            Through This Slideshow!</p>
+        <div class="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4">
+            <a href="/{{event.id}}/codes"
+                class="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-white rounded-lg bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-900">
+                Go To Slider
+                <svg class="w-3.5 h-3.5 ml-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 14 10">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M1 5h12m0 0L9 1m4 4L9 9" />
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        setInterval(function () {
+            window.location.reload();
+        }, 60000);
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
+
+</body>
+
+</html>

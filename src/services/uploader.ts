@@ -6,7 +6,6 @@ export const s3 = new AWS.S3({
     secretAccessKey: AWS_SECRET_ACCESS_KEY,
     region: AWS_REGION,
 });
-
 export const uploadEventLogo = async (
     file: string | Buffer,
     type: string,

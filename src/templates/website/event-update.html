@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Resumed - Event Networking Registration">
     <meta name="author" content="Ansonika">
-    <title>Resumed Events - Update Event | Networking Made Easy</title>
+    <title>{{ event.displayName }} - Update Event | Networking Made Easy</title>
 
     <!-- Favicons-->
     <link rel="shortcut icon" href="{{AWS_BUCKET_NAME}}img/favicon.ico" type="image/x-icon">
@@ -64,7 +64,7 @@
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 if (diffDays > 7) {
                     // use  banner to  warn user of 7 day limit
-                    document.getElementById("banner").innerHTML = "<div class='alert alert-danger' role='alert'>We only support events that are less than 7 days in length.</div>";
+                    document.getElementById("banner").innerHTML = "<div class='alert alert-danger' role='alert'>We only support events that are less than 3 days in length.</div>";
                     // disappear after 5 seconds
                     setTimeout(() => {
                         document.getElementById("banner").innerHTML = "";
@@ -104,7 +104,7 @@
         <div class="row row-height">
             <div class="col-xl-4 col-lg-4 content-left">
                 <div class="content-left-wrapper">
-                    <a href="#" id="logo"><img src="{{AWS_BUCKET_NAME}}img/icon.svg" alt="" width="100" height="90"></a>
+                    <a href="#" id="logo"><img src="{{AWS_BUCKET_NAME}}img/icon.svg" alt="" width="110" height="90"></a>
                     <div id="social">
                         <ul>
                             <li><a href="#0"><i class="icon-facebook"></i></a></li>
@@ -114,11 +114,12 @@
                     </div>
                     <!-- /social -->
                     <div>
-                        <h2>Revolutionize Networking Events with Resumed</h2>
+
+                        <h2>Revolutionize Your Networking Events</h2>
                         <p>Unleash the Power of QR Codes for Dynamic Speed Networking</p>
                         <a href="#start" class="btn_1 rounded mobile_btn yellow">Start Now!</a>
                     </div>
-                    <div class="copy">© 2022 Resumed</div>
+                    <div class="copy">© 2023 Resumed Events</div>
                 </div>
                 <!-- /content-left-wrapper -->
             </div>
@@ -130,8 +131,8 @@
                         <div id="progressbar"></div>
                     </div>
                     <!-- /top-wizard -->
-                    <!-- get url currently in which is {{SERVER_URL}}/networking/:event/:code -->
-                    <form id="wrapped" method="post" action="{{SERVER_URL}}/networking/{{event.id}}/{{event.tempKey}}"
+                    <!-- get url currently in which is {{SERVER_URL}}/:event/:code -->
+                    <form id="wrapped" method="post" action="{{SERVER_URL}}/{{event.id}}/{{event.tempKey}}"
                         enctype="multipart/form-data">
                         <input id="website" name="website" type="text" value="">
                         <!-- Leave for security protection, read docs for details -->
@@ -139,111 +140,112 @@
                             <div class="step">
                                 <h2 class="section_title">Provide event details.</h2>
                                 <div id="banner"></div>
-
+{{#configuration.email}}
                                 <div class="form-group add_top_30">
                                     <label for="email">Email Address</label>
                                     <p class="text-muted">{{event.email}}</p>
                                 </div>
+{{/configuration.email}}
+                                
                                 <div class="form-group ">
                                     <label for="name">Event Name</label>
                                     <input type="text" name="name" id="name" value="{{event.displayName}}"
                                         class="form-control" onchange="getVals(this, 'name_field');">
                                 </div>
                                 <div class="form-group">
-                                    <label for="startDate">Start Date</label>
-                                    <input type="date" name="startDate" id="startDate" value="{{event.startDate}}"
-                                        class="form-control">
+                                    <label for="description">Short Description</label>
+                                    <textarea name="description" id="description" class="form-control"
+                                        style="height: 75px" minlength="50" maxlength="200">{{event.description}}</textarea>
                                 </div>
                                 <div class="form-group">
-                                    <label for="endDate">End Date</label>
-                                    <input type="date" name="endDate" id="endDate" value="{{event.endDate}}"
-                                        class="form-control">
+                                    <label for="organizers">Additional Contact Emails <small>(Separated by
+                                            commas)</small> </label>
+
+                                    <textarea name="organizers" id="organizers" class="form-control"
+                                        style="height: 50px">{{#event.organizers}}{{.}}, {{/event.organizers}}</textarea>
+
                                 </div>
-                                <!--
-                                <label>Theme</label>
-                                <div class="form-group radio_input" hidden>
-                                    <label class="container_radio me-3">Light
-                                        <input type="radio" name="theme" id="theme" value="light"  class="required">
-                                        <span class="checkmark"></span>
-                                    </label>
-                                    <label class="container_radio">Dark
-                                        <input type="radio" name="theme" id="theme" value="dark" class="required">
-                                        <span class="checkmark"></span>
-                                    </label>
-                                </div>-->
                                 <div class="form-group add_bottom_30 add_top_20">
                                     <label>Upload Logo<br><small>(File accepted: .png, .jpeg, .jpg - Max file size:
                                             150KB)</small></label>
                                     <div class="fileupload">
-                                        <input type="file" name="fileupload" id="logo" value="{{event.logo}}"
+                                        {{#event.logo}}
+                                        <input type="file" name="fileupload" id="logo" value="{{.}}"
                                             accept=".png,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                                        {{/event.logo}}
+                                        {{^event.logo}}
+                                        <input type="file" name="fileupload" id="logo"
+                                            accept=".png,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                                        {{/event.logo}}
                                     </div>
                                 </div>
                             </div>
                             <!-- /step-->
 
-                            <!-- /Start Branch ============================== -->
-                            <div class="step" data-state="end">
-                                <h2 class="section_title">Select the domain link to capture.</h2>
+                            <div class="submit step" id="end">
+                                <h2 class="section_title">Data Gathering Details</h2>
+                                <h3 class="main_question">What information would you like us to gather from your
+                                    attendees?</h3>
+                                <div class="form-group add_top_30">
+                                    <label class="container_check version_2">First and Last Name
+                                        {{#configuration.fullName}}
+                                        <input type="checkbox" name="attendee_data[]" value="fullName" checked>
+                                        {{/configuration.fullName}}
+                                        {{^configuration.fullName}}
+                                        <input type="checkbox" name="attendee_data[]" value="fullName">
+                                        {{/configuration.fullName}}
+                                        <span class="checkmark"></span>
+                                    </label>
+                                </div>
                                 <div class="form-group">
-                                    {{#linkedin}}
-                                    <label class="container_radio version_2 active">LinkedIn
-                                        <input type="radio" name="captureType" id="captureType" value="linkedin">
+                                    <label class="container_check version_2">Email Address
+                                        {{#configuration.email}}
+                                        <input type="checkbox" name="attendee_data[]" value="emailAddress" checked>
+                                        {{/configuration.email}}
+                                        {{^configuration.email}}
+                                        <input type="checkbox" name="attendee_data[]" value="emailAddress">
+                                        {{/configuration.email}}
                                         <span class="checkmark"></span>
                                     </label>
-                                    {{/linkedin}}
-                                    {{^linkedin}}
-                                    <label class="container_radio version_2">LinkedIn
-                                        <input type="radio" name="captureType" id="captureType" value="linkedin">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="container_check version_2">Job Title
+                                        {{#configuration.jobTitle}}
+                                        <input type="checkbox" name="attendee_data[]" value="jobTitle" checked>
+                                        {{/configuration.jobTitle}}
+                                        {{^configuration.jobTitle}}
+                                        <input type="checkbox" name="attendee_data[]" value="jobTitle">
+                                        {{/configuration.jobTitle}}
                                         <span class="checkmark"></span>
                                     </label>
-                                    {{/linkedin}}
-                                    {{#personal}}
-                                    <label class="container_radio version_2 active">Personal Website
-                                        <input type="radio" name="captureType" id="captureType" value="personal">
+                                </div>
+                                <div class="form-group">
+                                    <label class="container_check version_2">Company
+                                        {{#configuration.company}}
+                                        <input type="checkbox" name="attendee_data[]" value="company" checked>
+                                        {{/configuration.company}}
+                                        {{^configuration.company}}
+                                        <input type="checkbox" name="attendee_data[]" value="company">
+                                        {{/configuration.company}}
                                         <span class="checkmark"></span>
                                     </label>
-                                    {{/personal}}
-                                    {{^personal}}
-                                    <label class="container_radio version_2">Personal Website
-                                        <input type="radio" name="captureType" id="captureType" value="personal">
-                                        <span class="checkmark"></span>
-                                    </label>
-                                    {{/personal}}
-                                    {{#both}}
-                                    <label class="container_radio version_2 active">Both
-                                        <input type="radio" name="captureType" id="captureType" value="both">
-                                        <span class="checkmark"></span>
-                                    </label>
-                                    {{/both}}
-                                    {{^both}}
-                                    <label class="container_radio version_2">Both
-                                        <input type="radio" name="captureType" id="captureType" value="both">
-                                        <span class="checkmark"></span>
-                                    </label>
-                                    {{/both}}
+                                </div>
+                                <label class="add_top_20">Questions <small>(Separated by commas)</small></label>
+                                <div class="form-group">
+                                    <label for="custom">Write your Questions</label>
+                                    {{#configuration.custom}}
+                                    <input type="text" name="attendee_data[]" id="custom" class="form-control"
+                                        value="{{.}}" placeholder="Write your Questions">
+                                    {{/configuration.custom}}
+                                    {{^configuration.custom}}
+                                    <input type="text" name="attendee_data[]" id="custom" class="form-control"
+                                        placeholder="Write your Questions">
+                                    {{/configuration.custom}}
                                 </div>
                             </div>
 
-                            <div class="submit step" id="end">
-                                <div class="summary">
-                                    <div class="wrapper">
-                                        <p>We will reach out to you shortly at the email address provided: <strong
-                                                id="email_field"></strong>. This email will contain your QR code creator
-                                            and carousel display information.</p>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="form-group terms">
-                                            <label class="container_check">Please accept our <a href="#"
-                                                    data-bs-toggle="modal" data-bs-target="#terms-txt">Terms and
-                                                    conditions</a> before Submit
-                                                <input type="checkbox" name="terms" value="Yes" class="required">
-                                                <span class="checkmark"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+
                             <!-- /step last-->
 
                         </div>
@@ -345,11 +347,13 @@
             }
         }
 
-
+        
     </script>
     <!-- Wizard script-->
     <script src="{{AWS_BUCKET_NAME}}js/func_1.js"></script>
-
+    <!-- Start of HubSpot Embed Code -->
+  <script type="text/javascript" id="hs-script-loader" async defer src="//js-na1.hs-scripts.com/44229600.js"></script>
+  <!-- End of HubSpot Embed Code -->
 </body>
 
 </html>

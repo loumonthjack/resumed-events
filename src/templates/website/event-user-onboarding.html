@@ -76,7 +76,7 @@
         <div class="row row-height">
             <div class="col-xl-4 col-lg-4 content-left">
                 <div class="content-left-wrapper">
-                    <a href="#" id="logo"><img src="{{AWS_BUCKET_NAME}}img/icon.svg" alt="" width="100" height="90"></a>
+                    <a href="#" id="logo"><img src="{{AWS_BUCKET_NAME}}img/icon.svg" alt="" width="110" height="90"></a>
                     <div id="social">
                         <ul>
                             <li><a href="#0"><i class="icon-facebook"></i></a></li>
@@ -86,6 +86,8 @@
                     </div>
                     <!-- /social -->
                     <div>
+                       <!--- <figure><img src="{{AWS_BUCKET_NAME}}img/code-icon.png" alt="" class="img-fluid" width="270" height="270"></figure>-->
+
                         <h2>Join the Future of Networking</h2>
                         <p>Unleash the Power of QR Codes for Dynamic Speed Networking</p>
                         <!--<a href="#start" class="btn_1 rounded mobile_btn yellow">Start Now!</a>-->
@@ -101,62 +103,57 @@
                         <span id="location"></span>
                     </div>
                     <!-- /top-wizard -->
-                    <form id="wrapped" method="post" action="{{SERVER_URL}}/networking/{{event.id}}">
+                    <form id="wrapped" method="post" action="{{SERVER_URL}}/networking/{{event.id}}/attendee">
                         <input id="website" name="website" type="text" value="">
                         <!-- Leave for security protection, read docs for details -->
                         <div id="middle-wizard">
                             <div class="submit step">
-                                <h2 class="section_title">Please provide details below for {{event.displayName}}.</h2>
-                                {{#event.linkedin}}
-                                <div>
-                                    <br />
-                                    <div id="banner"></div>
-                                    <label for="linkedInUrl">Your LinkedIn Username</label>
-                                    <input type="text" name="linkedInUrl" id="linkedInUrl" />
+                                <h2 class="section_title">Kindly fill in your details for {{event.displayName}} below.</h2>
+                                <div id="banner"></div>
+                                {{#configuration.email}}
+                                <div class="form-group add_top_30">
+                                    <label for="email">Email Address</label>
+                                    <input type="text" name="email" id="email" 
+                                    class="form-control" onchange="getVals(this, 'email_field');">  
                                 </div>
-                                {{/event.linkedin}}
-                                {{#event.personal}}
-                                <div>
-                                    <br />
-                                    <div id="banner"></div>
-                                    <label for="personalUrl">Your Website</label>
-                                    <input type="text" name="personalUrl" id="personalUrl" />
+                                {{/configuration.email}}
+                                {{#configuration.fullName}}
+                                <div class="form-group ">
+                                    <label for="name">Full Name</label>
+                                    <input type="text" name="name" id="name" 
+                                        class="form-control" onchange="getVals(this, 'name_field');">
                                 </div>
-                                {{/event.personal}}
-                                {{#event.both}}
-                                <div>
-                                    <br />
-                                    <div id="banner"></div>
-                                    <label for="linkedInUrl">Your LinkedIn Username</label>
-                                    <input type="text" name="linkedInUrl" id="linkedInUrl" />
+                                {{/configuration.fullName}}
+                                {{#configuration.jobTitle}}
+                                <div class="form-group">
+                                    <label for="title">Job Title</label>
+                                    <input type="text" name="title" id="title" 
+                                        class="form-control">
                                 </div>
-                                <style>
-                                    hr {
-                                        border: none;
-                                        border-top: 3px double #333;
-                                        color: #333;
-                                        overflow: visible;
-                                        text-align: center;
-                                        height: 5px;
-                                    }
-
-                                    hr:after {
-                                        background: #fff;
-                                        content: 'or';
-                                        padding: 0 4px;
-                                        position: relative;
-                                        top: -13px;
-                                    }
-                                </style>
-                                <div id="line">
-                                    <hr />
-
+                                {{/configuration.jobTitle}}
+                                {{#configuration.company}}
+                                <div class="form-group">
+                                    <label for="company">Company</label>
+                                    <input type="text" name="company" id="company" 
+                                        class="form-control">
                                 </div>
-                                <div>
-                                    <label for="personalUrl">Your Website</label>
-                                    <input type="text" name="personalUrl" id="personalUrl" />
+                                {{/configuration.company}}
+                                {{#configuration.custom}}
+                                <div class="form-group">
+                                    <label for="custom">{{.}}</label>
+                                    <textarea name="custom" id="custom" class="form-control required"
+                                        style="height: 75px" ></textarea>
                                 </div>
-                                {{/event.both}}
+                                {{/configuration.custom}}
+                                <label>Online Presence</label>
+							    <div class="form-group">
+							        <label for="personal_website">Personal Website</label>
+							        <input type="text" name="personal_website" id="personal_website" class="form-control">
+							    </div>
+							    <div class="form-group">
+							        <label for="linkedin">Linkedin Profile</label>
+							        <input type="text" name="linkedin" id="linkedin" class="form-control">
+							    </div>
                             </div>
                             <!-- /step-->
 

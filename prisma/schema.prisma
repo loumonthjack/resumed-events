@@ -11,20 +11,70 @@ datasource db {
 }
 
 model Event {
-  id           String           @id @unique
-  name          String 
-  email          String
-  logo           String?
-  startDate      DateTime?
-  endDate        DateTime?
-  createdAt      DateTime        @default(now())
-  description    String?
-  terms          Boolean          @default(false)
-  type           String?
-  tempKey        String?        @unique
-  theme          Theme?          @default(LIGHT)
-  isPaid         Boolean         @default(false)
-  EventAttendant EventAttendant[]
+  id                  String                @id @unique
+  name                String
+  email               String
+  organizers          String[]              @default([])
+  logo                String?
+  startDate           DateTime?
+  endDate             DateTime?
+  createdAt           DateTime              @default(now())
+  description         String?
+  terms               Boolean               @default(false)
+  isArchived          Boolean               @default(false)
+  tempKey             String?               @unique
+  theme               Theme?                @default(LIGHT)
+  isPaid              Boolean               @default(false)
+  EventAttendant      EventAttendant[]
+  EventConfigurations EventConfigurations[]
+  AttendeeNotify      AttendeeNotify[]
+  Subscription        Subscription[]
+  Configuration       Configuration[]
+}
+
+enum SupportPriorityEnum {
+  email
+  zendesk
+  chat
+  manager
+}
+
+model EventConfigurations {
+  id                  String                @id @default(uuid())
+  attendeesLimit      Int
+  maxDays             Int
+  supportType         SupportPriorityEnum[]
+  hasAttendeeBranding Boolean               @default(false)
+  hasEventBranding    Boolean               @default(false)
+  event               Event                 @relation(fields: [eventId], references: [id])
+  eventId             String                @unique
+}
+
+enum SubscriptionTypeEnum {
+  BASIC
+  PRO
+  CUSTOM
+}
+
+model SubscriptionType {
+  id           String               @id @default(uuid())
+  name         SubscriptionTypeEnum @unique
+  dayLimit     Int
+  codeLimit    Int
+  externalId   String               @unique
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime?            @updatedAt
+  Subscription Subscription[]
+}
+
+model Subscription {
+  id                 String           @id @default(uuid())
+  SubscriptionType   SubscriptionType @relation(fields: [subscriptionTypeId], references: [id])
+  subscriptionTypeId String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  Event              Event            @relation(fields: [eventId], references: [id])
+  eventId            String
 }
 
 enum Theme {
@@ -34,16 +84,41 @@ enum Theme {
 
 model EventAttendant {
   id      String @id @default(uuid())
-  url     String
+  data    Json   @default("{}")
   event   Event  @relation(fields: [eventId], references: [id])
   eventId String
 }
 
-model Subscriber {
-  id      String @id @default(uuid())
-  email   String @unique
-  unsubscribedAt DateTime?
+// for attendee that fill out email on coming soon page, notify them when event is live if event has started and paid
+model AttendeeNotify {
+  id        String   @id @default(uuid())
+  email     String
+  hasSent   Boolean  @default(false)
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
   createdAt DateTime @default(now())
-  isSubscribed Boolean @default(true)
 }
 
+enum AttendeeData {
+  firstName
+  lastName
+  email
+  company
+  jobTitle
+  location
+  website
+  custom
+  linkedin
+}
+
+model Configuration {
+  id                  String    @id @default(uuid())
+  event               Event     @relation(fields: [eventId], references: [id])
+  eventId             String    @unique
+  attendeeData        String[]
+  showSlideControls   Boolean   @default(false)
+  showAttendeeDetails Boolean   @default(false)
+  enableEarlyAccess   Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime? @updatedAt
+}

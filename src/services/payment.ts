@@ -1,14 +1,21 @@
 import { Request, Response as ExpressResponse, Router } from 'express';
-import prisma from './db-client';
-import { FULL_SERVER_URL } from '../constants';
+import prisma from './database';
 import Messenger from './mailer';
-async function handleCharge(event: Request['body']) {
-    if (!event.data.object.billing_details.email) throw new Error('No email provided by Stripe');
-    // get user most recent event by email address and get isPaid attribute is false
-    const user = await prisma.event.findFirst({
+import { SubscriptionTypeEnum, SupportPriorityEnum } from '@prisma/client';
+
+export async function handleCharge(event: Request['body']) {
+    if (event.data.object.payment_status !== 'paid') return false;
+    if (!event.data.object.customer_details.email) return false;
+    const planType = await prisma.subscriptionType.findUnique({
         where: {
-            email: event.data.object.billing_details.email,
-            isPaid: false,
+            externalId: event.data.object.payment_link
+        }
+    })
+    if (!planType) throw new Error('Plan not found');
+    // get user most recent event by email address and get isPaid attribute is false
+    const user = await prisma.event.findMany({
+        where: {
+            email: event.data.object.customer_details.email,
         },
         orderBy: {
             createdAt: 'desc',
@@ -16,32 +23,56 @@ async function handleCharge(event: Request['body']) {
     });
     if (!user) throw new Error('Event not found');
     // update isPaid attribute to true
+    const filterEvent = user.filter((event) => event.isPaid === false);
+    if (!filterEvent) throw new Error('Event not found');
+    // get latest event
+    const latestEvent = filterEvent[0];
+    if (!latestEvent) throw new Error('Event not found');
     await prisma.event.update({
         where: {
-            id: user.id,
+            id: latestEvent.id,
         },
         data: {
             isPaid: true,
         },
     });
-    // send onboarding instructions
-    await Messenger.sendEventWelcomeEmail(event.data.object.billing_details.email, {
-        event: {
-            id: user.id,
-            name: user.name.toLowerCase(),
-            startDate: user.startDate.toISOString(),
-            endDate: user.endDate.toISOString(),
-        },
-    });
-    return true;
-}
-export async function webhookEvent(request: Request, response: ExpressResponse) {
-    const event = request.body;
-    console.log(event);
-    if (event.type === 'charge.succeeded') {
-        const payment = await handleCharge(event);
-        if (!payment) throw new Error('Payment could not be processed');
-        return  response.redirect(200, FULL_SERVER_URL + '/purchase');
+
+    await prisma.subscription.create({
+        data: {
+            Event: {
+                connect: {
+                    id: latestEvent.id,
+                }
+            },
+            SubscriptionType: {
+                connect: {
+                    id: planType.id,
+                }
+            },
+            createdAt: new Date(),
+        }
+    })
+    if (planType.name === SubscriptionTypeEnum.BASIC || planType.name === SubscriptionTypeEnum.PRO) {
+        await prisma.eventConfigurations.create({
+            data: {
+                event: {
+                    connect: {
+                        id: latestEvent.id,
+                    }
+                },
+                supportType: planType.name === SubscriptionTypeEnum.BASIC ? [SupportPriorityEnum.email, SupportPriorityEnum.zendesk] : [SupportPriorityEnum.email, SupportPriorityEnum.zendesk, SupportPriorityEnum.chat],
+                hasAttendeeBranding: false,
+                hasEventBranding: true,
+                attendeesLimit: planType.codeLimit,
+                maxDays: planType.dayLimit,
+            }
+        })
+        latestEvent.organizers.push(event.data.object.customer_details.email)
+        event = latestEvent;
+        // send onboarding instructions
+        await Messenger.sendEventWelcomeEmail(latestEvent.organizers, { event });
     }
-    return response.status(200).json({ received: true });
+
+
+    return true;
 }

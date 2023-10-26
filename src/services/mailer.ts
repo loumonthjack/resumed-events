@@ -1,8 +1,9 @@
 import sendGrid from '@sendgrid/mail';
-import {renderTemplate} from '../templates';
-import {FULL_SERVER_URL} from '../constants';
-import prisma from './db-client';
-import { generateCUID } from '../helper';
+import { renderTemplate } from '../templates';
+import { FULL_SERVER_URL } from '../constants';
+import prisma from './database';
+import { capitalizeEventName, generateCUID, removeDuplicates } from '../helper';
+import { computeEventDuration, determineStripePaymentPage } from '../endpoints/networking/init';
 
 class Sendgrid {
   private client;
@@ -20,15 +21,109 @@ class Sendgrid {
     return this.client;
   }
 
-  async sendEmail(to: string, subject: string, body: string) {
+  async sendEmail(to: string | string[], subject: string, body: string) {
     const fromEmail = process.env.SENDGRID_FROM_EMAIL || '';
-    const msg = {
+    const removeFirstElement = (arr: string[]) => {
+      const [, ...rest] = arr;
+      return rest;
+    }
+    if (Array.isArray(to)) {
+      const uniqueEmails = removeDuplicates(to);
+      return uniqueEmails.forEach(async (email) => {
+        const msg = {
+          to: email,
+          from: fromEmail,
+          subject,
+          html: body,
+        };
+        return this.getInstance().send(msg);
+      });
+    } else {
+      const msg = {
+        to,
+        from: fromEmail,
+        subject,
+        html: body,
+      };
+      return this.getInstance().send(msg);
+    }
+  }
+  async sendNonPaidEmails(
+    to: string,
+    data: any) {
+      const event = { ...data };
+      const eventDuration = computeEventDuration(event.startDate, event.endDate);
+      const paymentLink = await determineStripePaymentPage(eventDuration, event.email)
+    const template = renderTemplate('event-unpaid', {
+      event: {
+        ...data,
+        displayName: capitalizeEventName(data.name),
+        paymentLink,
+      },
+      SERVER_URL: FULL_SERVER_URL,
+    });
+    if (!template) throw new Error('Template could not be rendered');
+    const success = this.sendEmail(
       to,
-      from: fromEmail,
-      subject,
-      html: body,
-    };
-    return this.getInstance().send(msg);
+      'Resumed Events: Finish your event setup',
+      template
+    );
+    if (!success) throw new Error('Email could not be sent to' + to);
+    return success;
+  }
+  async sendNotifyEmails(
+    to: string,
+    data: any
+  ) {
+    const template = renderTemplate('event-notify', {
+      event: {
+        ...data,
+        displayName: capitalizeEventName(data.name),
+      },
+      SERVER_URL: FULL_SERVER_URL,
+    });
+    if (!template) throw new Error('Template could not be rendered');
+    const success = this.sendEmail(
+      to,
+      capitalizeEventName(data.name) + ' social portal is now live!',
+      template
+    );
+    if (!success) throw new Error('Email could not be sent to' + to);
+    return success;
+  }
+  async sendFeedbackEmails(
+    to: string,
+    data: any
+  ) {
+    const template = renderTemplate('event-feedback', {
+      event: data.event,
+      SERVER_URL: FULL_SERVER_URL,
+    });
+    if (!template) throw new Error('Template could not be rendered');
+    const success = this.sendEmail(
+      to,
+      'Resumed Events: How was your event?',
+      template
+    );
+    if (!success) throw new Error('Email could not be sent to' + to);
+    return success;
+  }
+  async sendPostEventEmails(
+    to: string | string[],
+    data: any
+  ) {
+    const template = renderTemplate('event-report', {
+      event: data.event,
+      SERVER_URL: FULL_SERVER_URL,
+    });
+    if (!template) throw new Error('Template could not be rendered');
+    const success = this.sendEmail(
+      to,
+      'Resumed Events: Your event report',
+      template
+    );
+    if (!success) throw new Error('Email could not be sent to' + to);
+    return success;
   }
 
   async sendAttendeeLimitEmail(
@@ -55,9 +150,9 @@ class Sendgrid {
     if (!success) throw new Error('Email could not be sent to' + to);
     return success;
   }
-  
+
   async sendEventWelcomeEmail(
-    to: string,
+    to: string | string[],
     data: {
       event: {
         id: string;
@@ -67,7 +162,7 @@ class Sendgrid {
       };
     }
   ) {
-    
+
     // update event with code
     const code = generateCUID();
     const event = await prisma.event.update({
