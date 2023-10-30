@@ -103,7 +103,7 @@
                         <span id="location"></span>
                     </div>
                     <!-- /top-wizard -->
-                    <form id="wrapped" method="post" action="{{SERVER_URL}}/networking/{{event.id}}/attendee">
+                    <form id="wrapped" method="post" action="{{SERVER_URL}}/attendee/{{event.id}}/create">
                         <input id="website" name="website" type="text" value="">
                         <!-- Leave for security protection, read docs for details -->
                         <div id="middle-wizard">
@@ -141,7 +141,7 @@
                                 {{#configuration.custom}}
                                 <div class="form-group">
                                     <label for="custom">{{.}}</label>
-                                    <textarea name="custom" id="custom" class="form-control required"
+                                    <textarea name="custom" id="custom" class="form-control"
                                         style="height: 75px" ></textarea>
                                 </div>
                                 {{/configuration.custom}}
@@ -154,6 +154,15 @@
 							        <label for="linkedin">Linkedin Profile</label>
 							        <input type="text" name="linkedin" id="linkedin" class="form-control">
 							    </div>
+                                <div class="text-center">
+                                    <div class="form-group terms">
+                                        <label class="container_check">Please agree to <a href="#"
+                                                data-bs-toggle="modal" data-bs-target="#terms-txt"><u>terms and conditions</u></a> before submitting
+                                            <input id="termsCheckbox" type="checkbox" name="terms" value="Yes" class="required">
+                                            <span class="checkmark"></span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             <!-- /step-->
 
@@ -163,7 +172,7 @@
                         <div id="bottom-wizard">
                             <!--<button type="button" name="backward" class="backward">Prev</button>
 							<button type="button" name="forward" class="forward">Next</button>-->
-                            <button type="submit" name="process" class="submit">Submit</button>
+                            <button id="finalSubmit" type="submit" name="process" class="submit">Submit</button>
                         </div>
                         <!-- /bottom-wizard -->
                     </form>
@@ -231,6 +240,18 @@
     <!-- Wizard script-->
     <script src="{{AWS_BUCKET_NAME}}js/func_1.js"></script>
     <script>
+        // finalSubmit button will be disabled as blurred out until the terms checkbox is checked
+        document.getElementById("finalSubmit").style.opacity = "0.5";
+        // when
+        document.getElementById("termsCheckbox").addEventListener("change", (e) => {
+            if (e.target.checked) {
+                document.getElementById("finalSubmit").disabled = false;
+                document.getElementById("finalSubmit").style.opacity = "1";
+            } else {
+                document.getElementById("finalSubmit").disabled = true;
+                document.getElementById("finalSubmit").style.opacity = "0.5";
+            }
+        })
         // if success is true in the url, show the success banner, display for 5 seconds
         const urlParams = new URLSearchParams(window.location.search);
         const success = urlParams.get('success');

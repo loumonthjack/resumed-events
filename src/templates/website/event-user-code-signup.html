@@ -103,7 +103,7 @@
                         <span id="location"></span>
                     </div>
                     <!-- /top-wizard -->
-                    <form id="wrapped" method="post" action="{{SERVER_URL}}/networking/{{event.id}}/attendee">
+                    <form id="wrapped" method="post" action="{{SERVER_URL}}/attendee/{{event.id}}/create">
                         <input id="website" name="website" type="text" value="">
                         <!-- Leave for security protection, read docs for details -->
                         <div id="middle-wizard">
@@ -154,6 +154,16 @@
 							        <label for="linkedin">Linkedin Profile</label>
 							        <input type="text" name="linkedin" id="linkedin" class="form-control">
 							    </div>
+                                <div class="text-center">
+                                    <div class="form-group terms">
+                                        <label class="container_check">Please accept our <a href="#"
+                                                data-bs-toggle="modal" data-bs-target="#terms-txt"><u>Terms and
+                                                    conditions</u></a> before Submit
+                                            <input type="checkbox" name="terms" value="Yes" class="required">
+                                            <span class="checkmark"></span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             <!-- /step-->
 

@@ -3,7 +3,7 @@ import { renderTemplate } from '../templates';
 import { FULL_SERVER_URL } from '../constants';
 import prisma from './database';
 import { capitalizeEventName, generateCUID, removeDuplicates } from '../helper';
-import { computeEventDuration, determineStripePaymentPage } from '../endpoints/networking/init';
+import { determineStripePaymentPage, computeEventDuration } from '../endpoints/networking/functions';
 
 class Sendgrid {
   private client;

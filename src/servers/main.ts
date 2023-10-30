@@ -49,7 +49,7 @@ const expressServer = async () => {
   
   app.all('*', (req: any, res: any) => res.status(404).send(renderTemplate('error')));
 
-  app.listen(4000, () => console.log(`Server listening running ${FULL_SERVER_URL}`));
+  app.listen(process.env.PORT, () => console.log(`Server listening running ${FULL_SERVER_URL}`));
 };
 
 expressServer();

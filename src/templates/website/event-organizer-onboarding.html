@@ -108,7 +108,21 @@
         <div class="row row-height">
             <div class="col-xl-4 col-lg-4 content-left">
                 <div class="content-left-wrapper">
-                    <a href="#" id="logo"><img src="{{AWS_BUCKET_NAME}}img/icon.svg" alt="" width="110" height="90"></a>
+                    <style>
+                        @media (max-width: 768px) {
+                            #logoImage {
+                                width: 60px;
+                                height: 45px;
+                            }
+                        }
+                        @media (min-width: 768px) {
+                           #logoImage {
+                                width: 100px;
+                                height: 85px;
+                            } 
+                        }
+                    </style>
+                    <a href="/" id="logo"><img id="logoImage" src="{{AWS_BUCKET_NAME}}img/icon.svg" alt=""></a>
                     <div id="social">
                         <ul>
                             <li><a href="#0"><i class="icon-facebook"></i></a></li>
@@ -116,13 +130,24 @@
                             <li><a href="#0"><i class="icon-linkedin"></i></a></li>
                         </ul>
                     </div>
+                    <style>
+                        /* on mobile hide codeFigure*/
+                        @media (max-width: 768px) {
+                            #codeFigure {
+                                display: none;
+                            }
+                        }
+                    </style>
                     <!-- /social -->
-                    <div>
-                        <figure><img src="{{AWS_BUCKET_NAME}}img/code-icon.png" alt="" class="img-fluid" width="270"
-                                height="270"></figure>
-                        <h2>Elevate Your Events!</h2>
-                        <p>Empower Your Events with Resumed's Dynamic QR Code Generator for Speed Networking</p>
-                        <a href="#start" class="btn_1 rounded mobile_btn yellow">Start Now!</a>
+
+                    <div >
+                        <figure id="codeFigure"><img id="codeIcon" src="{{AWS_BUCKET_NAME}}img/code-icon.png" alt="" class="img-fluid" width="50%" height="70%"/></figure>
+                        <div style="padding-left: 1.5rem;padding-right: 1.5rem;">
+                            <h2>Elevate Your Events!</h2>
+                        
+                            <p>Empower Your Events with Resumed's Dynamic QR Code Generator for Speed Networking</p>
+                            <a href="#start" class="btn_1 rounded mobile_btn yellow">Start Now!</a>
+                        </div>
                     </div>
                     <div class="copy">© 2023 Resumed</div>
                 </div>
@@ -136,7 +161,7 @@
                         <div id="progressbar"></div>
                     </div>
                     <!-- /top-wizard -->
-                    <form id="wrapped" method="post" action="{{SERVER_URL}}/networking" enctype="multipart/form-data">
+                    <form id="wrapped" method="post" action="{{SERVER_URL}}/create" enctype="multipart/form-data">
                         <input id="website" name="website" type="text" value="">
                         <!-- Leave for security protection, read docs for details -->
                         <div id="middle-wizard">
@@ -161,8 +186,7 @@
                                         style="height: 75px" minlength="10" maxlength="100"></textarea>
                                 </div>
                                 <div class="form-group">
-                                    <label for="organizers">Additional Contact Emails <small>(Separated by
-                                            commas)</small> </label>
+                                    <label for="organizers">Additional Emails <small>(comma-separated)</small></label>
                                     <textarea name="organizers" id="organizers" class="form-control"
                                         style="height: 50px"></textarea>
                                 </div>

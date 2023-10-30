@@ -132,7 +132,7 @@
                     </div>
                     <!-- /top-wizard -->
                     <!-- get url currently in which is {{SERVER_URL}}/:event/:code -->
-                    <form id="wrapped" method="post" action="{{SERVER_URL}}/{{event.id}}/{{event.tempKey}}"
+                    <form id="wrapped" method="post" action="{{SERVER_URL}}/update/{{event.id}}/{{event.tempKey}}"
                         enctype="multipart/form-data">
                         <input id="website" name="website" type="text" value="">
                         <!-- Leave for security protection, read docs for details -->
@@ -158,8 +158,7 @@
                                         style="height: 75px" minlength="50" maxlength="200">{{event.description}}</textarea>
                                 </div>
                                 <div class="form-group">
-                                    <label for="organizers">Additional Contact Emails <small>(Separated by
-                                            commas)</small> </label>
+                                    <label for="organizers">Additional Emails <small>(comma-separated)</small></label>
 
                                     <textarea name="organizers" id="organizers" class="form-control"
                                         style="height: 50px">{{#event.organizers}}{{.}}, {{/event.organizers}}</textarea>

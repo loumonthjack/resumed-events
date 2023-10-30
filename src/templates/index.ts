@@ -6,82 +6,63 @@ import { AWS_BUCKET_NAME, FULL_SERVER_URL } from '../constants';
 const EMAIL_BASE_PATH = './email';
 const WEBSITE_BASE_PATH = './website';
 
-const ERROR_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/common/error.html`)).toString();
-const NEW_EVENT_HTML = fs.readFileSync(path.join(__dirname, `${EMAIL_BASE_PATH}/new-event.html`)).toString();
-const NETWORK_ORGANIZER_ONBOARDING_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-organizer-onboarding.html`)).toString();
-const NETWORK_USER_ONBOARDING_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-user-onboarding.html`)).toString();
-const NETWORK_USER_CODE_SIGNUP_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-user-code-signup.html`)).toString();
-const NETWORK_CODE_VIEW_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-code.html`)).toString();
-const NETWORK_USER_CODE_VIEW_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-user-code.html`)).toString();
+const readFile = (basePath, fileName) => 
+    fs.readFileSync(path.join(__dirname, `${basePath}/${fileName}`)).toString();
 
-const NETWORK_CODES_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-code-view.html`)).toString();
+const websiteTemplates = {
+    error: readFile(WEBSITE_BASE_PATH, 'error.html'),
+    eventOrganizerOnboarding: readFile(WEBSITE_BASE_PATH, 'event-organizer-onboarding.html'),
+    eventUserOnboarding: readFile(WEBSITE_BASE_PATH, 'event-user-onboarding.html'),
+    eventUserCodeSignup: readFile(WEBSITE_BASE_PATH, 'event-user-code-signup.html'),
+    eventCode: readFile(WEBSITE_BASE_PATH, 'event-landing.html'),
+    eventUserCode: readFile(WEBSITE_BASE_PATH, 'event-user-code.html'),
+    eventCodeView: readFile(WEBSITE_BASE_PATH, 'event-portal.html'),
+    eventUpdate: readFile(WEBSITE_BASE_PATH, 'event-update.html'),
+    homepage: readFile(WEBSITE_BASE_PATH, 'homepage.html'),
+    eventComingSoon: readFile(WEBSITE_BASE_PATH, 'event-coming-soon.html'),
+    terms: readFile(WEBSITE_BASE_PATH, 'terms.html'),
+    privacy: readFile(WEBSITE_BASE_PATH, 'privacy.html'),
+    eventThankYou: readFile(WEBSITE_BASE_PATH, 'thank-you.html'),
+};
 
-const NETWORK_EVENT_UPDATE_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-update.html`)).toString();
-const NETWORK_HOMEPAGE_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/homepage.html`)).toString();
-const NETWORK_EVENT_COMING_SOON_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-coming-soon.html`)).toString();
-const NETWORK_EVENT_EXPIRED_HTML = fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/event-expired.html`)).toString();
+const emailTemplates = {
+    newEvent: readFile(EMAIL_BASE_PATH, 'new-event.html'),
+    unpaidEvent: readFile(EMAIL_BASE_PATH, 'unpaid-event.html'),
+    notifyAttendee: readFile(EMAIL_BASE_PATH, 'notify-attendee.html'),
+    report: readFile(EMAIL_BASE_PATH, 'report.html'),
+    attendeeAlert: readFile(EMAIL_BASE_PATH, 'attendee-alert.html'),
+    feedback: readFile(EMAIL_BASE_PATH, 'feedback.html')
+};
 
-const EMAIL_NON_PAYMENT = fs.readFileSync(path.join(__dirname, `${EMAIL_BASE_PATH}/unpaid-event.html`)).toString();
-const EMAIL_ATTENDEE_NOTIFY = fs.readFileSync(path.join(__dirname, `${EMAIL_BASE_PATH}/notify-attendee.html`)).toString();
-const EMAIL_EVENT_REPORT = fs.readFileSync(path.join(__dirname, `${EMAIL_BASE_PATH}/report.html`)).toString();
-const EMAIL_ATTENDEE_LIMIT = fs.readFileSync(path.join(__dirname, `${EMAIL_BASE_PATH}/attendee-alert.html`)).toString();
-const EMAIL_EVENT_FEEDBACK = fs.readFileSync(path.join(__dirname, `${EMAIL_BASE_PATH}/feedback.html`)).toString();
-export const renderTemplate = (template: string, data?: { [key: string]: any }, theme?: string): string | null => {
-    const templates = {
-        error: ERROR_HTML,
-        email: {
-            newEvent: NEW_EVENT_HTML,
-            attendeeNotify: EMAIL_ATTENDEE_NOTIFY,
-            attendeeLimit: EMAIL_ATTENDEE_LIMIT,
-            eventReport: EMAIL_EVENT_REPORT,
-            eventFeedback: EMAIL_EVENT_FEEDBACK,
-            nonPayment: EMAIL_NON_PAYMENT,
-        },
-        terms: fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/terms.html`)).toString(),
-        privacy: fs.readFileSync(path.join(__dirname, `${WEBSITE_BASE_PATH}/privacy.html`)).toString(),
-        networking: {
-            event: {
-                comingSoon: NETWORK_EVENT_COMING_SOON_HTML,
-                expired: NETWORK_EVENT_EXPIRED_HTML,
-                homepage: NETWORK_HOMEPAGE_HTML,
-                organizerOnboarding: NETWORK_ORGANIZER_ONBOARDING_HTML,
-                userOnboarding: NETWORK_USER_ONBOARDING_HTML,
-                codeView: NETWORK_CODE_VIEW_HTML,
-                codes: NETWORK_CODES_HTML,
-                userCodeSignup: NETWORK_USER_CODE_SIGNUP_HTML,
-                organizerUpdate: NETWORK_EVENT_UPDATE_HTML,
-                userCode: NETWORK_USER_CODE_VIEW_HTML,
-            },
-        },
-    };
+const networkingConfig = {
+    EMAIL_BUCKET: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/email`,
+    AWS_BUCKET_NAME: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/`,
+    SERVER_URL: FULL_SERVER_URL,
+    CDN: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/dist`
+};
 
-    const websiteBucket = `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/`
-    const emailBucket = `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/email`
-
-    const networkingConfig = {
-        AWS_BUCKET_NAME: websiteBucket,
-        SERVER_URL: FULL_SERVER_URL,
-    };
-    const homePageCDN = `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/dist`
-    return (template === 'eventFeedback' ? Mustache.render(templates.email.eventFeedback,{ ...networkingConfig, ...data, CDN: homePageCDN }) : template === 'event-notify' ? Mustache.render(templates.email.attendeeNotify, { ...networkingConfig, ...data, CDN: homePageCDN }) : template === 'event-report' ? Mustache.render(templates.email.eventReport, { ...networkingConfig, ...data, CDN: homePageCDN }) : template === 'event-unpaid' ? Mustache.render(templates.email.nonPayment, { ...networkingConfig, ...data, CDN: homePageCDN }) :
-        template === 'attendee-limit-email' ? Mustache.render(templates.email.attendeeLimit, { ...networkingConfig, ...data, CDN: homePageCDN }) : template === 'privacy' ? Mustache.render(templates.privacy, { ...networkingConfig, ...data, CDN: homePageCDN }) : template === 'terms' ? Mustache.render(templates.terms, { ...networkingConfig, ...data, CDN: homePageCDN }) : template === 'networking-user-code' ? Mustache.render(templates.networking.event.userCode, { ...networkingConfig, ...data, CDN: homePageCDN }) : template === 'homepage' ? Mustache.render(templates.networking.event.homepage, { ...networkingConfig, ...data, CDN: homePageCDN }) :
-            template === 'coming-soon' ? Mustache.render(templates.networking.event.comingSoon, { ...networkingConfig, ...data, CDN: homePageCDN }) :
-                template === 'expired' ? Mustache.render(templates.networking.event.expired, { ...networkingConfig, ...data, CDN: homePageCDN }) :
-                    template === 'error'
-                        ? Mustache.render(templates.networking.event.expired, { ...networkingConfig, ...data, CDN: homePageCDN }) : template === 'new-event-email'
-                            ? Mustache.render(templates.email.newEvent, { ...data })
-                            : template === 'networking-event-onboarding'
-                                ? Mustache.render(templates.networking.event.organizerOnboarding, { ...networkingConfig, ...data })
-                                : template === 'networking-user-onboarding'
-                                    ? Mustache.render(templates.networking.event.userOnboarding, { ...networkingConfig, ...data })
-                                    : template === 'networking-code'
-                                        ? Mustache.render(templates.networking.event.codes, { ...networkingConfig, ...data, AWS_BUCKET_NAME: `${networkingConfig.AWS_BUCKET_NAME}event-code-view/` })
-                                        : template === 'networking-code-view'
-                                            ? Mustache.render(templates.networking.event.codeView, { ...networkingConfig, ...data, AWS_BUCKET_NAME: `${networkingConfig.AWS_BUCKET_NAME}event-code-view/`, CDN: homePageCDN })
-                                            : template === 'networking-user-code-signup'
-                                                ? Mustache.render(templates.networking.event.userCodeSignup, { ...networkingConfig, ...data })
-                                                : template === 'networking-event-update'
-                                                    ? Mustache.render(templates.networking.event.organizerUpdate, { ...networkingConfig, ...data })
-                                                    : Mustache.render(templates.networking.event.expired, { ...networkingConfig, ...data, CDN: homePageCDN })
-    );
+export const renderTemplate = (template, data = {}) => {
+    switch (template) {
+        case 'eventFeedback':
+            return Mustache.render(emailTemplates.feedback, { ...networkingConfig, ...data });
+        case 'event-notify':
+            return Mustache.render(emailTemplates.notifyAttendee, { ...networkingConfig, ...data });
+        case 'event-report':
+            return Mustache.render(emailTemplates.report, { ...networkingConfig, ...data });
+        case 'event-unpaid':
+            return Mustache.render(emailTemplates.unpaidEvent, { ...networkingConfig, ...data });
+        case 'attendee-limit-email':
+            return Mustache.render(emailTemplates.attendeeAlert, { ...networkingConfig, ...data });
+        case 'new-event-email':
+            return Mustache.render(emailTemplates.newEvent, { ...data });
+        default:
+            const matchingTemplate = websiteTemplates[template];
+            if (matchingTemplate) {
+                if (template === 'eventCodeView') {
+                    return Mustache.render(matchingTemplate, { ...networkingConfig, ...data, AWS_BUCKET_NAME: networkingConfig.AWS_BUCKET_NAME + 'event-code-view/' });
+                }
+                return Mustache.render(matchingTemplate, { ...networkingConfig, ...data });
+            }
+            return Mustache.render(websiteTemplates.error, { ...networkingConfig, ...data });
+    }
 };
