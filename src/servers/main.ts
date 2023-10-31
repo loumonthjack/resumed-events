@@ -4,7 +4,7 @@ import sslRedirect from 'express-sslify';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { FULL_SERVER_URL, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
+import { FULL_SERVER_URL, STRIPE_WEBHOOK_KEY, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
 import { renderTemplate } from '../templates';
 import networkingRoute from '../endpoints/networking/init';
 import webhookServer, { stripe } from './webhook';
@@ -42,7 +42,6 @@ const expressServer = async () => {
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
-
     // Return a 200 response to acknowledge receipt of the event
     response.send(200)
   });
