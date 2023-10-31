@@ -4,6 +4,7 @@ import Messenger from './mailer';
 import { SubscriptionTypeEnum, SupportPriorityEnum } from '@prisma/client';
 
 export async function handleCharge(event: Request['body']) {
+    console.log('event', event)
     if (event.data.object.payment_status !== 'paid') return false;
     if (!event.data.object.customer_details.email) return false;
     const planType = await prisma.subscriptionType.findUnique({

@@ -4,8 +4,8 @@ import { renderTemplate } from '../../templates';
 import { uploadEventLogo } from '../../services/uploader';
 import { capitalizeEventName, removeDuplicates } from '../../helper';
 import { $sendOnboardingTemplate, upload, $handleNetworkingPost, $sendThankYouTemplate, sendErrorTemplate, getEventInfo, sendCountdownTemplate, validEventMiddleware, redirectOnError, isValidUrl, isBlackListedUrl, sendAttendeeLimitEmail, $sendEventUpdateTemplate, $sendEventLandingTemplate, generateQRCodes, sendEventCodes } from './functions';
+import QRCode from '../../generator';
 
-const QRCode = require('qrcode');
 
 const MAX_ONE_DAY_ATTENDEES = 200;
 const MAX_TWO_DAY_ATTENDEES = 500;
@@ -104,26 +104,25 @@ eventRouter.post('/attendee/:eventId/create', validEventMiddleware, async (req: 
             eventId: activeEvent.id,
         },
     });
+    const createCode = await QRCode.create({
+        url: url,
+        title: capitalizeEventName(activeEvent.name) + ' - ' + name,
+        name: capitalizeEventName(name),
+    });
     const data = {
         fullName: name,
         emailAddress: email,
         jobTitle: title,
-        company: company,
+        company,
         custom: {
             "key": configuration.attendeeData.filter((data) => data !== "company" && data !== "fullName" && data !== "emailAddress" && data !== "jobTitle" && data !== "location").toString(),
             "value": custom || ""
         },
-        url: url
-
+        url,
+        eventId: req.params.eventId,
+        externalId: createCode,
     }
-
-    const newUrl = await prisma.eventAttendant.create({
-        data: {
-            data,
-            eventId: req.params.eventId, // isRequired
-        },
-    });
-
+    const newUrl = await prisma.eventAttendant.create({ data });
     if (!newUrl) {
         return res.status(500).send('Error creating url');
     }
@@ -143,26 +142,18 @@ eventRouter.get('/attendee/:eventId/share/:attendeeId', validEventMiddleware, as
     if (!attendant) {
         return sendErrorTemplate(res, 'Attendee not found');
     }
-    const qrCode = await QRCode.toDataURL(attendant.data["url"], {
-        color: { dark: '#fff', light: '#000' },
-        width: 100,
-        maskPattern: 7,
-        height: 100,
-        margin: 0,
-        scale: 10,
-        quality: 1,
-    });
     const configuration = await prisma.configuration.findUnique({
         where: {
             eventId: eventInfo.id,
         },
     });
+    const code = await QRCode.get(attendant.externalId);
     const eventAddCode = renderTemplate('eventUserCode', {
         event: {
             ...eventInfo,
             displayName: capitalizeEventName(eventInfo.name),
         },
-        source: qrCode,
+        source: code.png,
         data: attendant.data,
         configuration,
     });
@@ -290,7 +281,7 @@ eventRouter.post('/update/:eventId/:code', async (req, res, next) => {
         }
 
         return res.redirect(
-            `/${updatedEvent.id}/${code}?success=true&event=${updatedEvent.name}`
+            `/update/${updatedEvent.id}/${code}?success=true&event=${updatedEvent.name}`
         );
     }
 );

@@ -43,7 +43,7 @@ const networkingConfig = {
 
 export const renderTemplate = (template, data = {}) => {
     switch (template) {
-        case 'eventFeedback':
+        case 'event-feedback':
             return Mustache.render(emailTemplates.feedback, { ...networkingConfig, ...data });
         case 'event-notify':
             return Mustache.render(emailTemplates.notifyAttendee, { ...networkingConfig, ...data });

@@ -8,9 +8,8 @@ import { capitalizeEventName, removeDuplicates } from '../../helper';
 import { stripe } from '../../servers/webhook';
 import multer from 'multer';
 import cuid from 'cuid';
-
-const QRCode = require('qrcode');
-
+import QRCode from '../../generator';
+import { SERVER_URL } from '../../constants';
 
 const MAX_EVENTS = 3;
 const MAX_EVENT_DAYS = 3;
@@ -71,7 +70,7 @@ export async function checkEventExists(email: string) {
 }
 
 export function computeEventDuration(startDate: string, endDate: string) {
-    return new Date(endDate).getDate() - new Date(startDate).getDate();
+    return new Date(endDate).getUTCDate() - new Date(startDate).getUTCDate();
 }
 
 export function adjustEndDate(endDate: string, eventDuration: number) {
@@ -86,13 +85,17 @@ export function adjustEndDate(endDate: string, eventDuration: number) {
 export async function createEvent(name, email, logo, organizers, description, attendeeData, startDate, endDate, theme, terms) {
     const organizerEmails = organizers?.split(',').map((email) => email.trim());
     const emails = [email, ...organizerEmails];
+    // remove empty strings from array
+    const filteredEmails = emails.filter((email) => email !== "");
+
     const event = await prisma.event.create({
         data: {
             id: cuid(),
             name: name.toLowerCase(),
             email: email,
             logo: logo || null,
-            organizers: emails || null,
+            organizers: filteredEmails || null,
+            externalId: null,
             description: description || null,
             startDate: new Date(startDate).toISOString(),
             endDate: new Date(endDate).toISOString(),
@@ -102,10 +105,7 @@ export async function createEvent(name, email, logo, organizers, description, at
     });
     if (!event) return null;
 
-    // remove empty strings from array
     const filteredAttendeeData = attendeeData.filter((data) => data !== "");
-
-
     await prisma.configuration.create({
         data: {
             event: {
@@ -120,6 +120,7 @@ export async function createEvent(name, email, logo, organizers, description, at
             createdAt: new Date(),
         },
     });
+
     return event;
 }
 
@@ -197,9 +198,9 @@ export function sendErrorTemplate(res: Response, message?: string) {
 }
 
 export function sendCountdownTemplate(res: Response, eventInfo: any, banner: boolean = false) {
-    const time = new Date().getDate()
+    const time = new Date().getUTCDate()
     const newDate = new Date(eventInfo.startDate).getUTCDate()
-    let days = newDate - time;
+    let days = time - newDate;
     const configuration = prisma.configuration.findUnique({
         where: {
             eventId: eventInfo.id,
@@ -225,18 +226,10 @@ export async function generateQRCodes(eventAttendants: any[]) {
     });
     return Promise.all(
         eventAttendants.map(async (attendant) => {
-            const qrCode = await QRCode.toDataURL(attendant.data.url, {
-                color: { dark: '#fff', light: '#000' },
-                width: 100,
-                maskPattern: 7,
-                height: 100,
-                margin: 0,
-                scale: 10,
-                quality: 1,
-            });
+            const getCode = await QRCode.get(attendant.externalId);
             return {
                 url: attendant.data.url,
-                qrCode,
+                qrCode: getCode?.png,
                 data: attendant.data,
                 configuration,
             };
@@ -297,6 +290,23 @@ export async function $handleNetworkingPost(req: Request, res: Response) {
     if (!newEvent) {
         return res.status(500).send('Error creating event');
     }
+    await QRCode.create({
+        name: capitalizeEventName(newEvent.name),
+        title: capitalizeEventName(newEvent.name) + ' QR Code',
+        url: 'http://' + SERVER_URL + '/attendee/' + newEvent.id + '/create',
+    }).then(async (code) => {
+        await prisma.event.update({
+            where: {
+                id: newEvent.id,
+            },
+            data: {
+                externalId: code,
+            },
+        });
+        return code;
+
+    });
+
 
     if (eventLogo) {
         const uploadSuccess = await handleEventLogoUpload(eventLogo, newEvent.id);

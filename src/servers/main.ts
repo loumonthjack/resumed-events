@@ -7,15 +7,18 @@ import rateLimit from 'express-rate-limit';
 import { FULL_SERVER_URL, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
 import { renderTemplate } from '../templates';
 import networkingRoute from '../endpoints/networking/init';
+import webhookServer from './webhook';
 
 const expressServer = async () => {
   const app = express();
   setEnvironment();
   checkEnvironmentVariables();
-  /*app.use(helmet({
+  
+  app.use(helmet({
     contentSecurityPolicy: false,
-    hsts: false,
-  }));*/
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+  }));
   app.use(rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -52,4 +55,5 @@ const expressServer = async () => {
   app.listen(process.env.PORT, () => console.log(`Server listening running ${FULL_SERVER_URL}`));
 };
 
+webhookServer();
 expressServer();
