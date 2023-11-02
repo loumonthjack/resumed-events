@@ -6,6 +6,22 @@ export const s3 = new AWS.S3({
     secretAccessKey: AWS_SECRET_ACCESS_KEY,
     region: AWS_REGION,
 });
+export const uploadProfilePicture = async (
+    file: string | Buffer,
+    type: string,
+    userId: string
+) => {
+    const params = {
+        Bucket: AWS_BUCKET_NAME,
+        Key: `profile_pictures/${userId}.${type.split('/')[1]}`,
+        ContentType: type,
+        ContentEncoding: 'base64',
+        Body: file,
+    };
+    const response = await s3.upload(params).promise();
+    return response.Location;
+};
+
 export const uploadEventLogo = async (
     file: string | Buffer,
     type: string,

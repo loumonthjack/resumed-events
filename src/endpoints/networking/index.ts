@@ -4,7 +4,8 @@ import { renderTemplate } from '../../templates';
 import { uploadEventLogo } from '../../services/uploader';
 import { capitalizeEventName, removeDuplicates } from '../../helper';
 import { $sendOnboardingTemplate, upload, $handleNetworkingPost, $sendThankYouTemplate, sendErrorTemplate, getEventInfo, sendCountdownTemplate, validEventMiddleware, redirectOnError, isValidUrl, isBlackListedUrl, sendAttendeeLimitEmail, $sendEventUpdateTemplate, $sendEventLandingTemplate, generateQRCodes, sendEventCodes } from './functions';
-import QRCode from '../../generator';
+import QRCode from '../../services/generator';
+import cuid from 'cuid';
 
 
 const MAX_ONE_DAY_ATTENDEES = 200;
@@ -104,8 +105,10 @@ eventRouter.post('/attendee/:eventId/create', validEventMiddleware, async (req: 
             eventId: activeEvent.id,
         },
     });
+    const attendeeId = cuid();
+    const createShortLink = await QRCode.createLink(url, activeEvent.id + "/" + attendeeId);
     const createCode = await QRCode.create({
-        url: url,
+        url: createShortLink.shortURL,
         title: capitalizeEventName(activeEvent.name) + ' - ' + name,
         name: capitalizeEventName(name),
     });
@@ -119,10 +122,16 @@ eventRouter.post('/attendee/:eventId/create', validEventMiddleware, async (req: 
             "value": custom || ""
         },
         url,
-        eventId: req.params.eventId,
-        externalId: createCode,
+        shortLinkId: createShortLink.id
     }
-    const newUrl = await prisma.eventAttendant.create({ data });
+    const newUrl = await prisma.eventAttendant.create({
+        data: {
+            id: attendeeId, 
+            data: { ...data }, 
+            eventId: req.params.eventId,
+            externalId: createCode,
+        }
+    });
     if (!newUrl) {
         return res.status(500).send('Error creating url');
     }
@@ -221,7 +230,7 @@ eventRouter.post('/update/:eventId/:code', async (req, res, next) => {
         }
 
         const emails = organizers?.split(',').map((email) => email.trim())
-        emails.push(activeEvent.email);
+        emails.push(activeEvent.userId);
         // remove empty strings from array and commas from emails
         if (emails.includes("")) {
             emails.splice(emails.indexOf(""), 1);

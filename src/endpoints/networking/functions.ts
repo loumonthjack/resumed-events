@@ -3,13 +3,13 @@ import { SubscriptionTypeEnum } from '@prisma/client';
 import prisma from '../../services/database';
 import { renderTemplate } from '../../templates';
 import Messenger from '../../services/mailer';
-import { uploadEventLogo } from '../../services/uploader';
+import { uploadEventLogo, uploadProfilePicture } from '../../services/uploader';
 import { capitalizeEventName, removeDuplicates } from '../../helper';
-import { stripe } from '../../servers/webhook';
 import multer from 'multer';
 import cuid from 'cuid';
-import QRCode from '../../generator';
+import QRCode from '../../services/generator';
 import { SERVER_URL } from '../../constants';
+import { stripe } from '../../servers/main';
 
 const MAX_EVENTS = 3;
 const MAX_EVENT_DAYS = 3;
@@ -63,9 +63,25 @@ type EventAttendant = {
     }
     eventId: string;
 };
+export async function getLoggedInUser(req, res) {
+    const session = await prisma.session.findUnique({
+        where: {
+            id: req.cookies['resumed-session'],
+        },
+    });
+    const loggedInUser = await prisma.user.findUnique({
+    where: {
+            id: session.userId,
+        },
+    });
+    if (!loggedInUser) {
+        return null;
+    }
+    return loggedInUser;
+}
 
-export async function checkEventExists(email: string) {
-    const eventInfo = await prisma.event.findMany({ where: { email } });
+export async function checkEventExists(userId: string) {
+    const eventInfo = await prisma.event.findMany({ where: { userId } });
     return eventInfo.length >= MAX_EVENTS;
 }
 
@@ -82,17 +98,16 @@ export function adjustEndDate(endDate: string, eventDuration: number) {
     return endDate;
 }
 
-export async function createEvent(name, email, logo, organizers, description, attendeeData, startDate, endDate, theme, terms) {
+export async function createEvent(userId, name, email, logo, organizers, description, attendeeData, startDate, endDate, theme, terms) {
     const organizerEmails = organizers?.split(',').map((email) => email.trim());
     const emails = [email, ...organizerEmails];
     // remove empty strings from array
     const filteredEmails = emails.filter((email) => email !== "");
-
     const event = await prisma.event.create({
         data: {
             id: cuid(),
             name: name.toLowerCase(),
-            email: email,
+            userId,
             logo: logo || null,
             organizers: filteredEmails || null,
             externalId: null,
@@ -122,6 +137,17 @@ export async function createEvent(name, email, logo, organizers, description, at
     });
 
     return event;
+}
+export async function handleProfilePictureUpload(profilePicture, userId) {
+    const upload = await uploadProfilePicture(profilePicture.buffer, profilePicture.mimetype, userId);
+    if (upload) {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { profilePicture: upload },
+        });
+        return true;
+    }
+    return false;
 }
 
 export async function handleEventLogoUpload(eventLogo, eventId) {
@@ -284,9 +310,9 @@ export async function $handleNetworkingPost(req: Request, res: Response) {
     if (eventDuration > MAX_EVENT_DAYS) {
         return res.redirect(`/#contact`);
     }
-
+    const user = await getLoggedInUser(req, res);
     const endDateString = adjustEndDate(endDate, eventDuration);
-    const newEvent = await createEvent(eventName, emailAddress, null, organizers, description, attendee_data, startDate, endDateString, theme, acceptTerms);
+    const newEvent = await createEvent(user.id, eventName, emailAddress, null, organizers, description, attendee_data, startDate, endDateString, theme, acceptTerms);
     if (!newEvent) {
         return res.status(500).send('Error creating event');
     }
@@ -315,7 +341,7 @@ export async function $handleNetworkingPost(req: Request, res: Response) {
         }
     }
 
-    const redirectUrl = await determineStripePaymentPage(eventDuration, newEvent.email);
+    const redirectUrl = await determineStripePaymentPage(eventDuration, newEvent.userId);
     return res.redirect(redirectUrl);
 }
 

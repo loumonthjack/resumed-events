@@ -10,11 +10,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Session {
+  id        String   @id @default(uuid())
+  code      Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id])
+  userId    String
+}
+
+model User {
+  id               String             @id @default(uuid())
+  email            String             @unique
+  firstName        String
+  lastName         String
+  terms            Boolean            @default(false)
+  profilePicture   String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime?          @updatedAt
+  Events           Event[]
+  Session          Session[]
+  SubscriptionType SubscriptionType[]
+  Subscription     Subscription[]
+}
+
 model Event {
   id                  String                @id @unique
   name                String
-  email               String
   organizers          String[]              @default([])
+  User                User                  @relation(fields: [userId], references: [id])
+  userId              String
   logo                String?
   startDate           DateTime?
   endDate             DateTime?
@@ -29,7 +54,6 @@ model Event {
   EventAttendant      EventAttendant[]
   EventConfigurations EventConfigurations[]
   AttendeeNotify      AttendeeNotify[]
-  Subscription        Subscription[]
   Configuration       Configuration[]
 }
 
@@ -52,30 +76,43 @@ model EventConfigurations {
 }
 
 enum SubscriptionTypeEnum {
+  FREE
   BASIC
   PRO
   CUSTOM
 }
 
+enum SubscriptionStatusEnum {
+  ACTIVE
+  INACTIVE
+}
+
+enum SubscriptionPeriodEnum {
+  MONTHLY
+  YEARLY
+}
+
 model SubscriptionType {
-  id           String               @id @default(uuid())
-  name         SubscriptionTypeEnum @unique
-  dayLimit     Int
-  codeLimit    Int
-  externalId   String               @unique
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime?            @updatedAt
+  id           String                 @id @default(uuid())
+  name         SubscriptionTypeEnum   @unique
+  period       SubscriptionPeriodEnum
+  externalId   String?                @unique
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime?              @updatedAt
   Subscription Subscription[]
+  User         User?                  @relation(fields: [userId], references: [id])
+  userId       String?
 }
 
 model Subscription {
-  id                 String           @id @default(uuid())
-  SubscriptionType   SubscriptionType @relation(fields: [subscriptionTypeId], references: [id])
+  id                 String                 @id @default(uuid())
+  status             SubscriptionStatusEnum
+  SubscriptionType   SubscriptionType       @relation(fields: [subscriptionTypeId], references: [id])
   subscriptionTypeId String
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  Event              Event            @relation(fields: [eventId], references: [id])
-  eventId            String
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  User               User                   @relation(fields: [userId], references: [id])
+  userId             String
 }
 
 enum Theme {
@@ -84,11 +121,11 @@ enum Theme {
 }
 
 model EventAttendant {
-  id      String @id @default(uuid())
-  data    Json   @default("{}")
+  id         String @id @default(uuid())
+  data       Json   @default("{}")
   externalId String @unique
-  event   Event  @relation(fields: [eventId], references: [id])
-  eventId String
+  event      Event  @relation(fields: [eventId], references: [id])
+  eventId    String
 }
 
 // for attendee that fill out email on coming soon page, notify them when event is live if event has started and paid

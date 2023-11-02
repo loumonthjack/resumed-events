@@ -1,6 +1,15 @@
 import axios from 'axios';
 const API_URL = 'https://api.qr.io/v1';
+const SHORT_IO_URL = 'https://api.short.io';
 const API_KEY = process.env.QR_API_KEY || '';
+const client = axios.create({
+    baseURL: SHORT_IO_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `${process.env.SHORT_IO_KEY}`
+    }
+});
 
 const createQRCode = async (data) => {
     try {
@@ -43,7 +52,18 @@ const listQRCode = async (id) => {
         return null;
     }
 };
+const createLink = async (url, path) => {
+    const link = await client.post(`/links`,{
+        domain: "go.resumed.events",
+        originalURL: url,
+        path: path,
 
+    })
+    return {
+        shortURL: link.data.shortURL,
+        id: link.data.idString
+    }
+};
 const deleteQRCode = async (id) => {
     try {
         const response = await axios.post(`${API_URL}/delete`, {
@@ -60,7 +80,8 @@ const deleteQRCode = async (id) => {
 const QRCode = {
     create: createQRCode,
     get: listQRCode,
-    delete: deleteQRCode
+    delete: deleteQRCode,
+    createLink: createLink
 };
 
 export default QRCode;

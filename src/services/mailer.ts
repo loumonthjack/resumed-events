@@ -150,7 +150,28 @@ class Sendgrid {
     if (!success) throw new Error('Email could not be sent to' + to);
     return success;
   }
-
+  async sendLoginEmail(
+    to: string,
+    data: {
+      code: string;
+      name: string;
+    }
+  ) {
+    const template = renderTemplate('magic-link', {
+      code: data.code,
+      firstName: capitalizeEventName(data.name),
+      loginUrl: `${FULL_SERVER_URL}/verify?code=${data.code}`,
+      SERVER_URL: FULL_SERVER_URL,
+    });
+    if (!template) throw new Error('Template could not be rendered');
+    const success = this.sendEmail(
+      to,
+      'Resumed Events: Your Magic Link',
+      template
+    );
+    if (!success) throw new Error('Email could not be sent to' + to);
+    return success;
+  }
   async sendEventWelcomeEmail(
     to: string | string[],
     data: {

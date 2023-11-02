@@ -23,6 +23,10 @@ const websiteTemplates = {
     terms: readFile(WEBSITE_BASE_PATH, 'terms.html'),
     privacy: readFile(WEBSITE_BASE_PATH, 'privacy.html'),
     eventThankYou: readFile(WEBSITE_BASE_PATH, 'thank-you.html'),
+    login: readFile(WEBSITE_BASE_PATH, 'login.html'),
+    signup: readFile(WEBSITE_BASE_PATH, 'signup.html'),
+    dashboard: readFile(WEBSITE_BASE_PATH, 'dashboard.html'),
+
 };
 
 const emailTemplates = {
@@ -31,7 +35,8 @@ const emailTemplates = {
     notifyAttendee: readFile(EMAIL_BASE_PATH, 'notify-attendee.html'),
     report: readFile(EMAIL_BASE_PATH, 'report.html'),
     attendeeAlert: readFile(EMAIL_BASE_PATH, 'attendee-alert.html'),
-    feedback: readFile(EMAIL_BASE_PATH, 'feedback.html')
+    feedback: readFile(EMAIL_BASE_PATH, 'feedback.html'),
+    magicLink: readFile(EMAIL_BASE_PATH, 'magic-link.html'),
 };
 
 const networkingConfig = {
@@ -43,6 +48,8 @@ const networkingConfig = {
 
 export const renderTemplate = (template, data = {}) => {
     switch (template) {
+        case 'magic-link':
+            return Mustache.render(emailTemplates.magicLink, { ...networkingConfig, ...data });
         case 'event-feedback':
             return Mustache.render(emailTemplates.feedback, { ...networkingConfig, ...data });
         case 'event-notify':
