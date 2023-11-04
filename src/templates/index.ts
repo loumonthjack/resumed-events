@@ -5,7 +5,6 @@ import { AWS_BUCKET_NAME, FULL_SERVER_URL } from "../constants";
 
 const EMAIL_BASE_PATH = "./email";
 const WEBSITE_BASE_PATH = "./website";
-
 const readFile = (basePath, fileName) =>
     fs.readFileSync(path.join(__dirname, `${basePath}/${fileName}`)).toString();
 
@@ -44,7 +43,6 @@ const networkingConfig = {
     SERVER_URL: FULL_SERVER_URL,
     CDN: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/dist`,
 };
-
 export const renderTemplate = (template, data = {}) => {
     const renderData = { ...networkingConfig, ...data };
 

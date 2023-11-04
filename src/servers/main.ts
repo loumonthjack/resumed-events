@@ -258,7 +258,7 @@ const expressServer = async () => {
           showBilling: show === 'billing' ? true : null,
           showProfile: show === 'profile' ? true : null,
           showHelp: show === 'help' ? true : null,
-          eventCount: events.length,
+          eventCount: events.length === 0 ? null : events.length,
           events: events.map((event) => ({
             ...event,
             displayName: capitalizeEventName(event.name),
