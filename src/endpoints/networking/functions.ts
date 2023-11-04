@@ -162,18 +162,14 @@ export async function handleEventLogoUpload(eventLogo, eventId) {
     return false;
 }
 
-export async function determineStripePaymentPage(eventDuration: number, mainEmail: string) {
-    if (eventDuration >= 0 && eventDuration <= 2) {
-        const planType = eventDuration === 0 ? SubscriptionTypeEnum.BASIC : SubscriptionTypeEnum.PRO;
-        const subscription = await prisma.subscriptionType.findUnique({ where: { name: planType } });
+export async function determineStripePaymentPage(name: string, email: string) {
+        const subscription = await prisma.subscriptionType.findUnique({ where: { name: name.toUpperCase() as SubscriptionTypeEnum } });
         if (!subscription) return '/error';
 
         const paymentLink = await stripe.paymentLinks.retrieve(subscription.externalId);
         if (!paymentLink) return '/error';
 
-        return `${paymentLink.url}?prefilled_email=${mainEmail}`;
-    }
-    return '/#contact';
+        return `${paymentLink.url}?prefilled_email=${email}`;
 }
 
 export async function getEventInfo(eventId: string) {
@@ -341,8 +337,7 @@ export async function $handleNetworkingPost(req: Request, res: Response) {
         }
     }
 
-    const redirectUrl = await determineStripePaymentPage(eventDuration, newEvent.userId);
-    return res.redirect(redirectUrl);
+    return res.send({ success: true, eventId: newEvent.id });
 }
 
 export const validEventMiddleware = async (req: Request, res: Response, next: NextFunction) => {

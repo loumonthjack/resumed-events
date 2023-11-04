@@ -4,15 +4,16 @@ import sslRedirect from 'express-sslify';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { FULL_SERVER_URL, STRIPE_WEBHOOK_KEY, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
+import { FULL_SERVER_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_KEY, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
 import { renderTemplate } from '../templates';
 import networkingRoute from '../endpoints/networking';
 import { handleCharge } from '../services/payment';
-import { handleProfilePictureUpload, upload } from '../endpoints/networking/functions';
+import { determineStripePaymentPage, handleProfilePictureUpload, upload } from '../endpoints/networking/functions';
 import prisma from '../services/database';
 import Messenger from '../services/mailer';
 import { capitalizeEventName } from '../helper';
-export const stripe = require('stripe')(STRIPE_WEBHOOK_KEY);
+import { SubscriptionTypeEnum } from '@prisma/client';
+export const stripe = require('stripe')(STRIPE_SECRET_KEY);
 const expressServer = async () => {
   const app = express();
   setEnvironment();
@@ -86,11 +87,11 @@ const expressServer = async () => {
       next();
     } else {
       res.cookie('resumed-session', '', { maxAge: 0 });
-      // clear expired sessions
+      // clear expired sessions, sessions last 24 hours
       await prisma.session.deleteMany({
         where: {
           createdAt: {
-            lte: new Date(new Date().getTime() - 60 * 60 * 1000),
+            lte: new Date(new Date().getTime() - 24 * 60 * 60 * 1000),
           },
         },
       });
@@ -150,15 +151,16 @@ const expressServer = async () => {
           code: sessionCode.toString(),
           name: user.firstName,
         });
-      }else{
-        return res.send({ duplicate: true  })
+      } else {
+        return res.send({ duplicate: true })
       }
 
     }
+
     return res.send({ success: true });
   });
   app.get('/verify', async (req, res) => {
-    const { code } = req.query;
+    const { code, redirectTo, verified } = req.query;
     if (!code) {
       res.redirect('/login?error=no-code');
     } else {
@@ -170,8 +172,31 @@ const expressServer = async () => {
       if (!session) {
         res.redirect('/login?error=no-session');
       } else {
-        res.cookie('resumed-session', session.id, { maxAge: 3600000 });
-        res.redirect(`/dashboard`);
+        // create cookie valid for 24 hours
+        res.cookie('resumed-session', session.id, { maxAge: 24 * 60 * 60 * 1000 });
+        /*if (verified) {
+          await prisma.user.update({
+            where: {
+              id: session.userId,
+            },
+            data: {
+              isVerified: true,
+            },
+          });
+        }*/
+        if (redirectTo) {
+          const user = await prisma.user.findUnique({
+            where: {
+              id: session.userId,
+            },
+          });
+          const getLink = await determineStripePaymentPage(redirectTo.toString().toUpperCase(), user.email);
+          if (getLink) {
+            return res.redirect(getLink);
+          }
+        } else {
+          res.redirect(`/dashboard`);
+        }
       }
     }
   });
@@ -194,6 +219,9 @@ const expressServer = async () => {
       if (!sessionData) {
         res.redirect('/login?error=no-session');
       } else {
+        if (!sessionData.User.profilePicture){
+          sessionData.User.profilePicture = 'https://s3.amazonaws.com/app.resumed.website/profile_pics/default.png'
+        }
         const events = await prisma.event.findMany({
           where: {
             userId: sessionData.userId,
@@ -214,15 +242,33 @@ const expressServer = async () => {
             createdAt: 'desc',
           },
         });
-        //const subscriptionType = await prisma.subscriptionType.findUnique({
-        //  where: {
-        //    id: mostRecentSubscription.subscriptionTypeId,
-        //  },
-        //});
+        if(mostRecentSubscription) {
+        const subscriptionType = await prisma.subscriptionType.findUnique({
+          where: {
+            id: mostRecentSubscription.subscriptionTypeId,
+          },
+        });
         res.send(renderTemplate('dashboard', {
           user: sessionData.User,
           //isActive: mostRecentSubscription.status === 'ACTIVE',
-          //subscription: subscriptionType.name,
+          subscription: capitalizeEventName(subscriptionType.name.toLowerCase()),
+          showSettings: show === 'settings' ? true : null,
+          showEvents: (show === 'events') || !show ? true : null,
+          showEventAttendants: show === 'attendants' ? true : null,
+          showBilling: show === 'billing' ? true : null,
+          showProfile: show === 'profile' ? true : null,
+          showHelp: show === 'help' ? true : null,
+          eventCount: events.length,
+          events: events.map((event) => ({
+            ...event,
+            displayName: capitalizeEventName(event.name),
+          })),
+        }));
+      }else {
+        res.send(renderTemplate('dashboard', {
+          user: sessionData.User,
+          //isActive: mostRecentSubscription.status === 'ACTIVE',
+          subscription: null,
           showSettings: show === 'settings' ? true : null,
           showEvents: (show === 'events') || !show ? true : null,
           showEventAttendants: show === 'attendants' ? true : null,
@@ -236,6 +282,7 @@ const expressServer = async () => {
           })),
         }));
       }
+    } 
     } else {
       res.redirect('/login?error=invalid');
     }
@@ -244,7 +291,7 @@ const expressServer = async () => {
 
   app.get('/signup', async (req, res) => res.send(renderTemplate('signup')));
   app.post('/signup', upload.single('profilePicture'), async (req, res) => {
-    const { email, firstName, lastName, terms } = req.body;
+    const { email, firstName, lastName, terms, redirectTo } = req.body;
     const createUser = await prisma.user.create({
       data: {
         email,
@@ -256,6 +303,26 @@ const expressServer = async () => {
     if (req.file) {
       await handleProfilePictureUpload(req.file, createUser.id);
     }
+    const sessionCode = Math.floor(100000 + Math.random() * 900000);
+    // create a session
+    await prisma.session.create({
+      data: {
+        User: {
+          connect: {
+            id: createUser.id,
+          },
+        },
+        code: sessionCode,
+        createdAt: new Date(),
+      },
+    });
+    await Messenger.sendLoginEmail(email, {
+      code: sessionCode.toString(),
+      subject: 'Action Required: Activate your account - Resumed Events',
+      redirectTo: redirectTo ? redirectTo.toString().toUpperCase() : null,
+      name: createUser.firstName,
+      verification: true,
+    });
     return res.send({ success: true });
   });
 

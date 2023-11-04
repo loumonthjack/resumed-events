@@ -220,6 +220,11 @@
         formData.append('lastName', lastName.value);
         formData.append('profilePicture', profilePicture.files[0]);
         formData.append('terms', terms.value);
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirectTo');
+        if (redirectTo) {
+            formData.append('redirectTo', redirectTo);
+        }
         try {
             const { data } = await axios.post('/signup', formData, {
                 headers: {

@@ -212,12 +212,11 @@
 
     <script>
         const axios = window.axios;
-        const registerForm = document.getElementById('loginForm');
+        const loginForm = document.getElementById('loginForm');
         const email = document.getElementById('email');
 
         const submitForm = async (e) => {
             e.preventDefault();
-            console.log('submitting form')
             const formData = new FormData();
             formData.append('email', email.value);
             try {
@@ -255,7 +254,7 @@
                 console.log(error);
             }
         }
-        registerForm.addEventListener('submit', submitForm);
+        loginForm.addEventListener('submit', submitForm);
         const params = new URLSearchParams(window.location.search);
         const error = params.get('error');
         const success = params.get('success');
