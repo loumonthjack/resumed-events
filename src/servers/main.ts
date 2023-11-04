@@ -87,11 +87,11 @@ const expressServer = async () => {
       next();
     } else {
       res.cookie('resumed-session', '', { maxAge: 0 });
-      // clear expired sessions
+      // clear expired sessions, sessions last 24 hours
       await prisma.session.deleteMany({
         where: {
           createdAt: {
-            lte: new Date(new Date().getTime() - 60 * 60 * 1000),
+            lte: new Date(new Date().getTime() - 24 * 60 * 60 * 1000),
           },
         },
       });
@@ -172,7 +172,8 @@ const expressServer = async () => {
       if (!session) {
         res.redirect('/login?error=no-session');
       } else {
-        res.cookie('resumed-session', session.id, { maxAge: 3600000 });
+        // create cookie valid for 24 hours
+        res.cookie('resumed-session', session.id, { maxAge: 24 * 60 * 60 * 1000 });
         /*if (verified) {
           await prisma.user.update({
             where: {
@@ -317,6 +318,7 @@ const expressServer = async () => {
     });
     await Messenger.sendLoginEmail(email, {
       code: sessionCode.toString(),
+      subject: 'Action Required: Activate your account - Resumed Events',
       redirectTo: redirectTo ? redirectTo.toString().toUpperCase() : null,
       name: createUser.firstName,
       verification: true,

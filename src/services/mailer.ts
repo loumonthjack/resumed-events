@@ -152,6 +152,7 @@ class Sendgrid {
     data: {
       code: string;
       name: string;
+      subject?: string;
       verification?: boolean;
       redirectTo?: string;
     }
@@ -167,7 +168,7 @@ class Sendgrid {
     if (!template) throw new Error('Template could not be rendered');
     const success = this.sendEmail(
       to,
-      'Resumed Events: Your Magic Link',
+      data.subject || 'Resumed Events: Your Magic Link',
       template
     );
     if (!success) throw new Error('Email could not be sent to' + to);
