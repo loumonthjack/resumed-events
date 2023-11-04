@@ -1324,19 +1324,22 @@
     </script>
 
     <script>
-        function handleForm(name) {
+        handleForm("alertForm", (response) => {
+            // TODO handle response
+        });
+
+        
+        function handleForm(name, repsonseHandler) {
             const form = document.getElementById(name);
-            const {
-                start,
-                report,
-                product,
-            } = form.elements;
-
-            // TODO send to server
+            const formData = new FormData(form);
             
+            form.addEventListener("submit", (event) => {
+                event.preventDefault()
+                fetch("/", {method: "POST"}, formData)
+                    .then(response => response.json())
+                    .then(json => responseHandler(json))
+            })
         }
-
-        handleForm("alertForm");
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.0.0/datepicker.min.js"></script>
