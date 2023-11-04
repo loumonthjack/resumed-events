@@ -91,7 +91,7 @@ const expressServer = async () => {
       await prisma.session.deleteMany({
         where: {
           createdAt: {
-            lte: new Date(new Date().getTime() - 60 * 60 * 1000),
+            lte: new Date(process.env.PRODUCTION ? new Date().getTime() - 60 * 60 * 1000 : 0),
           },
         },
       });
