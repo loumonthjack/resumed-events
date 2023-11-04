@@ -13,6 +13,7 @@ import prisma from '../services/database';
 import Messenger from '../services/mailer';
 import { capitalizeEventName } from '../helper';
 export const stripe = require('stripe')(STRIPE_WEBHOOK_KEY);
+
 const expressServer = async () => {
   const app = express();
   setEnvironment();
@@ -68,7 +69,7 @@ const expressServer = async () => {
   app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
   app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
   app.use(async (req, res, next) => {
-    const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
+    const cookie = getCookie(req)
     if (cookie) {
       // if session exists and trying to access login or signup, redirect to dashboard
       const session = await prisma.session.findUnique({
@@ -102,7 +103,7 @@ const expressServer = async () => {
     }
   })
   app.get('/logout', async (req, res) => {
-    const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
+    const cookie = getCookie(req)
     if (cookie) {
       await prisma.session.delete({
         where: {
@@ -177,7 +178,7 @@ const expressServer = async () => {
   });
   app.get('/dashboard', async (req, res) => {
     const { show } = req.query;
-    const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
+    const cookie = getCookie(req)
     if (cookie) {
       const sessionData = await prisma.session.findUnique({
         where: {
@@ -265,5 +266,9 @@ const expressServer = async () => {
 
   app.listen(process.env.PORT, () => console.log(`Server listening running ${FULL_SERVER_URL}`));
 };
+
+function getCookie(req) {
+   return req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
+}
 
 expressServer();
