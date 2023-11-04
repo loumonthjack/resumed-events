@@ -241,6 +241,34 @@ const expressServer = async () => {
       res.redirect('/login?error=invalid');
     }
   });
+  app.post('/dashboard/settings/alerts', upload.any(), async (req, res) => {
+    const cookie = getCookie(req);
+    if (!cookie) {
+      res.redirect('/login?error=invalid');
+      return;
+    }
+
+    const session = await prisma.session.findUnique({
+      where: {
+        id: cookie.toString()
+      }
+    })
+
+    if (!session) {
+      res.redirect('/login?error=no-session');
+      return;
+    }
+    
+    // TODO update db
+    // const user = await prisma.user.update({
+    //   where: {
+    //     id: session.userId,
+    //   },
+    //   data: {
+
+    //   }
+    // })
+  })
 
 
   app.get('/signup', async (req, res) => res.send(renderTemplate('signup')));
