@@ -157,7 +157,7 @@
                     <option value="#" selected>Profile</option>
                     {{/showProfile}}
                     {{^showProfile}}
-<option value="/dashboard?show=profile">Profile</option>
+                    <option value="/dashboard?show=profile">Profile</option>
                     {{/showProfile}}
                     {{#showBilling}}
                     <option value="#" selected>Billing</option>
@@ -165,6 +165,12 @@
                     {{^showBilling}}
                     <option value="/dashboard?show=billing">Billing</option>
                     {{/showBilling}}
+                    {{#showSettings}}
+                    <option value="#" selected>Settings</option>
+                    {{/showSettings}}
+                    {{^showSettings}}
+                    <option value="/dashboard?show=settings">Settings</option>
+                    {{/showSettings}}
                     {{#showHelp}}
                     <option value="#" selected>Help & Support</option>
                     {{/showHelp}}
@@ -219,6 +225,19 @@
                                 Billing
                             </a>
                             {{/showBilling}}
+                        </li>
+                        <li class="block border-b dark:border-gray-700 lg:inline lg:border-b-0">
+                            {{#showSettings}}
+                            <a href="#"
+                            class="block py-3 px-4 border-b-2 text-primary-600 hover:text-primary-600 dark:text-primary-500 dark:border-primary-500 border-primary-600"
+                            aria-current="page">Settings</a>
+                            {{/showSettings}}
+                            {{^showSettings}}
+                            <a href="/dashboard?show=settings"
+                                class="block py-3 px-4 text-gray-500 dark:text-gray-400 hover:text-primary-600 hover:border-b-2 dark:hover:text-primary-500 dark:hover:border-primary-500 hover:border-primary-600">
+                                Settings
+                            </a>
+                            {{/showSettings}}
                         </li>
                         <li class="block border-b dark:border-gray-700 lg:inline lg:border-b-0">
 
@@ -1206,7 +1225,50 @@
         {{/showBilling}}
         {{#showSettings}}
         <main class="dark:bg-gray-900 flex-1 p-4 space-y-4">
-            </main>
+            <section class="">
+                <div class="flex gap-4 flex-wrap py-8 px-4">
+                    <div class="block p-8 bg-white rounded-lg shadow dark:bg-gray-800">
+                        <h3 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Alerts</h3>
+                        <p class="font-normal text-gray-700 dark:text-gray-400">You can pick which notifications you want</p>
+                        <form id="alertForm">
+                            <label class="flex items-center py-4 gap-4 cursor-pointer border-b border-gray-400">
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-semibold text-gray-90 dark:text-white">Event Start</h3> 
+                                    <p class="text-gray-500 font-medium">Send an e-mail to all users when the event starts</p>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="start" value="event-start" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                </div>
+                            </label>
+                        
+                            <label class="flex items-center py-4 gap-4 cursor-pointer border-b border-gray-400">
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-semibold text-gray-90 dark:text-white">Event Post Report</h3> 
+                                    <p class="text-gray-500 font-medium">Recieve an e-mail with a report after the event</p>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="report" value="post-report" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center py-4 gap-4 cursor-pointer">
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-semibold text-gray-90 dark:text-white">Product Updates</h3> 
+                                    <p class="text-gray-500 font-medium">Get notified when there are updates to resumed</p>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="product" value="product-updates" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                </div>
+                            </label>
+                            <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm leading-none px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Save</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
         {{/showSettings}}
 
         
@@ -1270,6 +1332,23 @@
             navigate(e.target.value);
         });
     </script>
+
+    <script>
+        function handleForm(name) {
+            const form = document.getElementById(name);
+            const {
+                start,
+                report,
+                product,
+            } = form.elements;
+
+            // TODO send to server
+            
+        }
+
+        handleForm("alertForm");
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.0.0/datepicker.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.0.0/flowbite.min.js"></script>
 
