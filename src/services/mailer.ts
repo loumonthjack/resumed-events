@@ -52,13 +52,10 @@ class Sendgrid {
     to: string,
     data: any) {
       const event = { ...data };
-      const eventDuration = computeEventDuration(event.startDate, event.endDate);
-      const paymentLink = await determineStripePaymentPage(eventDuration, event.email)
     const template = renderTemplate('event-unpaid', {
       event: {
         ...data,
         displayName: capitalizeEventName(data.name),
-        paymentLink,
       },
       SERVER_URL: FULL_SERVER_URL,
     });
@@ -155,12 +152,16 @@ class Sendgrid {
     data: {
       code: string;
       name: string;
+      verification?: boolean;
+      redirectTo?: string;
     }
   ) {
     const template = renderTemplate('magic-link', {
       code: data.code,
+      redirectTo: data.redirectTo,
+      verified: data.verification,
       firstName: capitalizeEventName(data.name),
-      loginUrl: `${FULL_SERVER_URL}/verify?code=${data.code}`,
+      loginUrl: `${FULL_SERVER_URL}/verify?code=${data.code}${data.redirectTo ? '&redirectTo=' + data.redirectTo : ''}${data.verification ? '&verified=true' : ''}`,
       SERVER_URL: FULL_SERVER_URL,
     });
     if (!template) throw new Error('Template could not be rendered');

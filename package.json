@@ -5,9 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start:dev": "nodemon -r dotenv/config ./src/servers/main.ts",
-    "start:dev:webhook": "nodemon -r dotenv/config ./src/servers/webhook.ts",
     "start:dev:worker": "nodemon -r dotenv/config ./src/servers/worker.ts",
-    "start:webhook": "ts-node src/servers/webhook.ts",
     "start:worker": "ts-node src/servers/worker.ts",
     "start": "ts-node src/servers/main.ts",
     "build": "tsc"
