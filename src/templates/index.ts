@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import Mustache from "mustache";
-import { AWS_BUCKET_NAME, FULL_SERVER_URL } from "../constants";
+import { AWS_BUCKET_NAME, FULL_SERVER_URL, NODE_ENV } from "../constants";
 
 const EMAIL_BASE_PATH = "./email";
 const WEBSITE_BASE_PATH = "./website";
@@ -38,13 +38,16 @@ const emailTemplates = {
     magicLink: readFile(EMAIL_BASE_PATH, "magic-link.html"),
 };
 
-const networkingConfig = {
+// NOTE p-sure this only thing needed in here
+export const networkingConfig = {
     EMAIL_BUCKET: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/email`,
     AWS_BUCKET_NAME: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/`,
     SERVER_URL: FULL_SERVER_URL,
     CDN: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/dist`,
 };
 
+
+// TODO email template logic
 export const renderTemplate = (template, data = {}) => {
     const renderData = { ...networkingConfig, ...data };
 
@@ -64,7 +67,7 @@ export const renderTemplate = (template, data = {}) => {
         case "new-event-email":
             return Mustache.render(emailTemplates.newEvent, { ...data });
         default:
-            const matchingTemplate = process.env.PRODUCTION ? websiteTemplates[template] : getTemplate(template);
+            const matchingTemplate = NODE_ENV === "production" ? websiteTemplates[template] : getTemplate(template);
             if (!matchingTemplate) {
                 return Mustache.render(websiteTemplates.error, renderData);
             }
@@ -82,7 +85,7 @@ const map = {
     error: "error.html",
     eventOrganizerOnboarding: "event-organizer-onboarding.html",
     eventUserOnboarding: "event-user-onboarding.html",
-    eventUserCodeSignup: "event-user-code-signup.html" ,
+    eventUserCodeSignup: "event-user-code-signup.html",
     eventCode: "event-landing.html",
     eventUserCode: "event-user-code.html",
     eventCodeView: "event-portal.html",
