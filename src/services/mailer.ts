@@ -188,18 +188,10 @@ class Sendgrid {
 
     // update event with code
     const code = generateCUID();
-    const event = await prisma.event.update({
-      where: {
-        id: data.event.id,
-      },
-      data: {
-        tempKey: code,
-      },
-    });
-    if (!event) throw new Error('Event could not be found');
+  
     const template = renderTemplate('new-event-email', {
       event: data.event,
-      authKey: event.tempKey,
+      authKey: "23",
       SERVER_URL: FULL_SERVER_URL,
     });
     if (!template) throw new Error('Template could not be rendered');

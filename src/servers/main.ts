@@ -4,15 +4,15 @@ import sslRedirect from 'express-sslify';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { FULL_SERVER_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_KEY, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
+import { CDN, FULL_SERVER_URL, SERVER_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_KEY, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
 import { renderTemplate } from '../templates';
 import networkingRoute from '../endpoints/networking';
-import { handleCharge } from '../services/payment';
+import { checkSubscription, handleCharge } from '../services/payment';
 import { determineStripePaymentPage, handleProfilePictureUpload, upload } from '../endpoints/networking/functions';
 import prisma from '../services/database';
 import Messenger from '../services/mailer';
 import { capitalizeEventName } from '../helper';
-import { SubscriptionTypeEnum } from '@prisma/client';
+import { SubscriptionStatusEnum, SubscriptionTypeEnum } from '@prisma/client';
 export const stripe = require('stripe')(STRIPE_SECRET_KEY);
 const expressServer = async () => {
   const app = express();
@@ -25,7 +25,7 @@ const expressServer = async () => {
     message: "Too many requests from this IP, please try again later."
   }));
   app.post('/webhook', express.raw({ type: 'application/json' }), async (request, response) => {
-    const sig = request.headers['stripe-signature'];
+    /*const sig = request.headers['stripe-signature'];
 
     let event;
     try {
@@ -33,8 +33,9 @@ const expressServer = async () => {
     } catch (err) {
       response.status(400).send(`Webhook Error: ${err.message}`);
       return;
-    }
+    }*/
     // Handle the event
+    const event = JSON.parse(Buffer.from(request.body).toString('utf-8'));
     switch (event.type) {
       case 'checkout.session.completed':
         await handleCharge(event);
@@ -63,8 +64,35 @@ const expressServer = async () => {
     }));
   }
   app.use(express.urlencoded({ extended: true }));
-
-  app.get('/', async (req, res) => res.send(renderTemplate('homepage')));
+app.use(async(req, res, next) => {
+  // if resumed-session cookie exists, set user to req.user
+  const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
+  if (cookie) {
+    const session = await prisma.session.findUnique({
+      where: {
+        id: cookie.toString(),
+      },
+      include: {
+        User: {
+          include: {
+            Subscription: true,
+          }
+        }
+      },
+    });
+    if (session) {
+      req['user'] = session.User;
+      req['subscription'] = session.User.Subscription;
+    }
+  }
+  next()
+})
+  app.get('/', async (req, res) => res.send(renderTemplate('homepage', {
+    user: req['user'] || null,
+    proPaymentLink: await determineStripePaymentPage("PRO", req['user']?.email),
+    basicPaymentLink: await determineStripePaymentPage("BASIC", req['user']?.email),
+    subscription: req['subscription'] && req['subscription'].length > 0 ? SERVER_URL  + "/dashboard?show=billing" : null,
+  })));
   app.get('/health-check', (req, res) => res.status(200).send('OK'));
   app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
   app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
@@ -174,7 +202,7 @@ const expressServer = async () => {
       } else {
         // create cookie valid for 24 hours
         res.cookie('resumed-session', session.id, { maxAge: 24 * 60 * 60 * 1000 });
-        /*if (verified) {
+        if (verified) {
           await prisma.user.update({
             where: {
               id: session.userId,
@@ -183,7 +211,7 @@ const expressServer = async () => {
               isVerified: true,
             },
           });
-        }*/
+        }
         if (redirectTo) {
           const user = await prisma.user.findUnique({
             where: {
@@ -195,6 +223,19 @@ const expressServer = async () => {
             return res.redirect(getLink);
           }
         } else {
+          const userSubscription = await prisma.subscription.findMany({
+            where: {
+              userId: session.userId,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          });
+          if (userSubscription.length > 0) {
+            userSubscription.forEach(async (subscription) => {
+              await checkSubscription(subscription.externalId);
+            });
+          }
           res.redirect(`/dashboard`);
         }
       }
@@ -227,8 +268,7 @@ const expressServer = async () => {
             userId: sessionData.userId,
           },
           include: {
-            EventConfigurations: true,
-            Configuration: true,
+            EventConfiguration: true,
             EventAttendant: true,
             AttendeeNotify: true,
             User: true,
@@ -237,6 +277,7 @@ const expressServer = async () => {
         const mostRecentSubscription = await prisma.subscription.findFirst({
           where: {
             userId: sessionData.userId,
+            status: SubscriptionStatusEnum.ACTIVE,
           },
           orderBy: {
             createdAt: 'desc',
@@ -252,6 +293,7 @@ const expressServer = async () => {
           user: sessionData.User,
           //isActive: mostRecentSubscription.status === 'ACTIVE',
           subscription: capitalizeEventName(subscriptionType.name.toLowerCase()),
+          manageSubscriptionLink: "https://billing.stripe.com/p/login/test_aEU7uA7bP8ta5B68ww?prefilled_email=" + sessionData.User.email,
           showSettings: show === 'settings' ? true : null,
           showEvents: (show === 'events') || !show ? true : null,
           showEventAttendants: show === 'attendants' ? true : null,
@@ -259,6 +301,7 @@ const expressServer = async () => {
           showProfile: show === 'profile' ? true : null,
           showHelp: show === 'help' ? true : null,
           eventCount: events.length === 0 ? null : events.length,
+
           events: events.map((event) => ({
             ...event,
             displayName: capitalizeEventName(event.name),
@@ -269,6 +312,7 @@ const expressServer = async () => {
           user: sessionData.User,
           //isActive: mostRecentSubscription.status === 'ACTIVE',
           subscription: null,
+          manageSubscriptionLink: "/#pricing",
           showSettings: show === 'settings' ? true : null,
           showEvents: (show === 'events') || !show ? true : null,
           showEventAttendants: show === 'attendants' ? true : null,
@@ -280,14 +324,13 @@ const expressServer = async () => {
             ...event,
             displayName: capitalizeEventName(event.name),
           })),
-        }));
+          }));
+        }
       }
-    } 
     } else {
       res.redirect('/login?error=invalid');
     }
   });
-
 
   app.get('/signup', async (req, res) => res.send(renderTemplate('signup')));
   app.post('/signup', upload.single('profilePicture'), async (req, res) => {
