@@ -57,3 +57,4 @@ export const CDN = `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/templa
 // Define Stripe webhook and secret keys
 export const STRIPE_WEBHOOK_KEY: string | undefined = isProd ? process.env.STRIPE_WEBHOOK_KEY : process.env.STRIPE_WEBHOOK_KEY_TEST;
 export const STRIPE_SECRET_KEY: string | undefined = isProd ? process.env.STRIPE_SECRET_KEY : process.env.STRIPE_SECRET_KEY_TEST;
+export const STRIPE_MANAGE_LINK: string = isProd ? 'https://dashboard.stripe.com/test/settings/account' : 'https://billing.stripe.com/p/login/test_aEU7uA7bP8ta5B68ww?prefilled_email=';

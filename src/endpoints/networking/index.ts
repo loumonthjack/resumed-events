@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import prisma from '../../services/database';
 import { renderTemplate } from '../../templates';
 import { uploadEventLogo } from '../../services/uploader';
-import { capitalizeEventName, removeDuplicates } from '../../helper';
+import { capitalizeName, generateCUID, removeDuplicates } from '../../helper';
 import { $sendOnboardingTemplate, upload, $handleNetworkingPost, $sendThankYouTemplate, sendErrorTemplate, getEventInfo, sendCountdownTemplate, validEventMiddleware, redirectOnError, isValidUrl, isBlackListedUrl, sendAttendeeLimitEmail, $sendEventUpdateTemplate, $sendEventLandingTemplate, generateQRCodes, sendEventCodes } from './functions';
 import QRCode from '../../services/generator';
 import cuid from 'cuid';
@@ -30,6 +30,7 @@ eventRouter.get('/attendee/:eventId/notify', async (req: Request, res: Response)
     const attendee = await prisma.attendeeNotify.create({
         data: {
             email: email.toString(),
+            id: generateCUID('attn'),
             event: {
                 connect: {
                     id: event.id,
@@ -53,7 +54,7 @@ eventRouter.get('/attendee/:eventId/create', validEventMiddleware, async (req: R
     const eventAddCode = renderTemplate('eventUserOnboarding', {
         event: {
             ...eventInfo,
-            displayName: capitalizeEventName(eventInfo.name),
+            displayName: capitalizeName(eventInfo.name),
         },
         configuration: {
             fullName: config?.attendeeData.includes('fullName'),
@@ -105,12 +106,12 @@ eventRouter.post('/attendee/:eventId/create', validEventMiddleware, async (req: 
             eventId: activeEvent.id,
         },
     });
-    const attendeeId = cuid();
+    const attendeeId = generateCUID('att');
     const createShortLink = await QRCode.createLink(url, activeEvent.id + "/" + attendeeId);
     const createCode = await QRCode.create({
         url: createShortLink.shortURL,
-        title: capitalizeEventName(activeEvent.name) + ' - ' + name,
-        name: capitalizeEventName(name),
+        title: capitalizeName(activeEvent.name) + ' - ' + name,
+        name: capitalizeName(name),
     });
     const data = {
         fullName: name,
@@ -126,8 +127,8 @@ eventRouter.post('/attendee/:eventId/create', validEventMiddleware, async (req: 
     }
     const newUrl = await prisma.eventAttendant.create({
         data: {
-            id: attendeeId, 
-            data: { ...data }, 
+            id: attendeeId,
+            data: { ...data },
             eventId: req.params.eventId,
             externalId: createCode,
         }
@@ -160,7 +161,7 @@ eventRouter.get('/attendee/:eventId/share/:attendeeId', validEventMiddleware, as
     const eventAddCode = renderTemplate('eventUserCode', {
         event: {
             ...eventInfo,
-            displayName: capitalizeEventName(eventInfo.name),
+            displayName: capitalizeName(eventInfo.name),
         },
         source: code.png,
         data: attendant.data,

@@ -2,7 +2,7 @@ import sendGrid from '@sendgrid/mail';
 import { renderTemplate } from '../templates';
 import { FULL_SERVER_URL } from '../constants';
 import prisma from './database';
-import { capitalizeEventName, generateCUID, removeDuplicates } from '../helper';
+import { capitalizeName, generateCUID, removeDuplicates } from '../helper';
 import { determineStripePaymentPage, computeEventDuration } from '../endpoints/networking/functions';
 
 class Sendgrid {
@@ -51,11 +51,11 @@ class Sendgrid {
   async sendNonPaidEmails(
     to: string,
     data: any) {
-      const event = { ...data };
+    const event = { ...data };
     const template = renderTemplate('event-unpaid', {
       event: {
         ...data,
-        displayName: capitalizeEventName(data.name),
+        displayName: capitalizeName(data.name),
       },
       SERVER_URL: FULL_SERVER_URL,
     });
@@ -75,14 +75,14 @@ class Sendgrid {
     const template = renderTemplate('event-notify', {
       event: {
         ...data,
-        displayName: capitalizeEventName(data.name),
+        displayName: capitalizeName(data.name),
       },
       SERVER_URL: FULL_SERVER_URL,
     });
     if (!template) throw new Error('Template could not be rendered');
     const success = this.sendEmail(
       to,
-      capitalizeEventName(data.name) + ' social portal is now live!',
+      capitalizeName(data.name) + ' social portal is now live!',
       template
     );
     if (!success) throw new Error('Email could not be sent to' + to);
@@ -161,7 +161,7 @@ class Sendgrid {
       code: data.code,
       redirectTo: data.redirectTo,
       verified: data.verification,
-      firstName: capitalizeEventName(data.name),
+      firstName: capitalizeName(data.name),
       loginUrl: `${FULL_SERVER_URL}/verify?code=${data.code}${data.redirectTo ? '&redirectTo=' + data.redirectTo : ''}${data.verification ? '&verified=true' : ''}`,
       SERVER_URL: FULL_SERVER_URL,
     });
@@ -188,7 +188,7 @@ class Sendgrid {
 
     // update event with code
     const code = generateCUID();
-  
+
     const template = renderTemplate('new-event-email', {
       event: data.event,
       authKey: "23",

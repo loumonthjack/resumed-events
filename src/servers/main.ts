@@ -4,14 +4,14 @@ import sslRedirect from 'express-sslify';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { CDN, FULL_SERVER_URL, SERVER_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_KEY, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
+import { CDN, FULL_SERVER_URL, SERVER_URL, STRIPE_MANAGE_LINK, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_KEY, checkEnvironmentVariables, isProd, setEnvironment } from '../constants';
 import { renderTemplate } from '../templates';
 import networkingRoute from '../endpoints/networking';
 import { checkSubscription, handleCharge } from '../services/payment';
-import { determineStripePaymentPage, handleProfilePictureUpload, upload } from '../endpoints/networking/functions';
+import { $handleNetworkingPost, determineStripePaymentPage, handleProfilePictureUpload, upload } from '../endpoints/networking/functions';
 import prisma from '../services/database';
 import Messenger from '../services/mailer';
-import { capitalizeEventName } from '../helper';
+import { capitalizeName, generateCUID } from '../helper';
 import { SubscriptionStatusEnum, SubscriptionTypeEnum } from '@prisma/client';
 export const stripe = require('stripe')(STRIPE_SECRET_KEY);
 const expressServer = async () => {
@@ -64,39 +64,30 @@ const expressServer = async () => {
     }));
   }
   app.use(express.urlencoded({ extended: true }));
-app.use(async(req, res, next) => {
-  // if resumed-session cookie exists, set user to req.user
-  const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
-  if (cookie) {
-    const session = await prisma.session.findUnique({
-      where: {
-        id: cookie.toString(),
-      },
-      include: {
-        User: {
-          include: {
-            Subscription: true,
-          }
-        }
-      },
-    });
-    if (session) {
-      req['user'] = session.User;
-      req['subscription'] = session.User.Subscription;
-    }
-  }
-  next()
-})
-  app.get('/', async (req, res) => res.send(renderTemplate('homepage', {
-    user: req['user'] || null,
-    proPaymentLink: await determineStripePaymentPage("PRO", req['user']?.email),
-    basicPaymentLink: await determineStripePaymentPage("BASIC", req['user']?.email),
-    subscription: req['subscription'] && req['subscription'].length > 0 ? SERVER_URL  + "/dashboard?show=billing" : null,
-  })));
-  app.get('/health-check', (req, res) => res.status(200).send('OK'));
-  app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
-  app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
   app.use(async (req, res, next) => {
+    // if resumed-session cookie exists, set user to req.user
+    const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
+    if (cookie) {
+      const session = await prisma.session.findUnique({
+        where: {
+          id: cookie.toString(),
+        },
+        include: {
+          User: {
+            include: {
+              Subscription: true,
+            }
+          }
+        },
+      });
+      if (session) {
+        req['user'] = session.User;
+        req['subscription'] = session.User.Subscription;
+      }
+    }
+    next()
+  })
+  const setAuth = async (req, res, next) => {
     const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
     if (cookie) {
       // if session exists and trying to access login or signup, redirect to dashboard
@@ -129,7 +120,25 @@ app.use(async(req, res, next) => {
         return res.redirect(`/login`);
       }
     }
-  })
+  }
+  app.use(setAuth);
+  const authRequired = async (req, res, next) => {
+    if (!req['user']) {
+      return res.redirect('/login');
+    }
+    next();
+  }
+  app.get('/', async (req, res) => res.send(renderTemplate('homepage', {
+    user: req['user'] || null,
+    proPaymentLink: await determineStripePaymentPage("PRO", req['user']?.email),
+    basicPaymentLink: await determineStripePaymentPage("BASIC", req['user']?.email),
+    subscription: req['subscription'] && req['subscription'].length > 0 ? SERVER_URL + "/dashboard?show=billing" : null,
+  })));
+  app.post('/create', authRequired, upload.single('eventLogo'), $handleNetworkingPost);
+  app.get('/health-check', (req, res) => res.status(200).send('OK'));
+  app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
+  app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
+
   app.get('/logout', async (req, res) => {
     const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
     if (cookie) {
@@ -147,7 +156,7 @@ app.use(async(req, res, next) => {
     const { email } = req.body;
     const user = await prisma.user.findUnique({
       where: {
-        email,
+        email: email.toLowerCase(),
       },
     });
     if (!user) {
@@ -165,6 +174,7 @@ app.use(async(req, res, next) => {
         // create a session
         await prisma.session.create({
           data: {
+            id: generateCUID('ssn'),
             User: {
               connect: {
                 id: user.id,
@@ -182,9 +192,7 @@ app.use(async(req, res, next) => {
       } else {
         return res.send({ duplicate: true })
       }
-
     }
-
     return res.send({ success: true });
   });
   app.get('/verify', async (req, res) => {
@@ -260,7 +268,7 @@ app.use(async(req, res, next) => {
       if (!sessionData) {
         res.redirect('/login?error=no-session');
       } else {
-        if (!sessionData.User.profilePicture){
+        if (!sessionData.User.profilePicture) {
           sessionData.User.profilePicture = 'https://s3.amazonaws.com/app.resumed.website/profile_pics/default.png'
         }
         const events = await prisma.event.findMany({
@@ -272,7 +280,10 @@ app.use(async(req, res, next) => {
             EventAttendant: true,
             AttendeeNotify: true,
             User: true,
-          }
+          },
+          orderBy: {
+            startDate: 'asc',
+          },
         });
         const mostRecentSubscription = await prisma.subscription.findFirst({
           where: {
@@ -283,47 +294,69 @@ app.use(async(req, res, next) => {
             createdAt: 'desc',
           },
         });
-        if(mostRecentSubscription) {
-        const subscriptionType = await prisma.subscriptionType.findUnique({
-          where: {
-            id: mostRecentSubscription.subscriptionTypeId,
-          },
-        });
-        res.send(renderTemplate('dashboard', {
-          user: sessionData.User,
-          //isActive: mostRecentSubscription.status === 'ACTIVE',
-          subscription: capitalizeEventName(subscriptionType.name.toLowerCase()),
-          manageSubscriptionLink: "https://billing.stripe.com/p/login/test_aEU7uA7bP8ta5B68ww?prefilled_email=" + sessionData.User.email,
-          showSettings: show === 'settings' ? true : null,
-          showEvents: (show === 'events') || !show ? true : null,
-          showEventAttendants: show === 'attendants' ? true : null,
-          showBilling: show === 'billing' ? true : null,
-          showProfile: show === 'profile' ? true : null,
-          showHelp: show === 'help' ? true : null,
-          eventCount: events.length === 0 ? null : events.length,
+        if (mostRecentSubscription) {
+          const subscriptionType = await prisma.subscriptionType.findUnique({
+            where: {
+              id: mostRecentSubscription.subscriptionTypeId,
+            },
+          });
+          const status = (start, end) =>{
+            const today = new Date().toISOString().split('T')[0];
+            if (today >= start && today <= end) {
+              return 'Active';
+            } else if (today > end) {
+              return 'Expired';
+            } else {
+              return 'Coming Soon';
+            }
+          }
+          res.send(renderTemplate('dashboard', {
+            user: sessionData.User,
+            //isActive: mostRecentSubscription.status === 'ACTIVE',
+            subscription: capitalizeName(subscriptionType.name.toLowerCase()),
+            manageSubscriptionLink: STRIPE_MANAGE_LINK + sessionData.User.email,
+            showSettings: show === 'settings' ? true : null,
+            showEvents: (show === 'events') || !show ? true : null,
+            showEventAttendants: show === 'attendants' ? true : null,
+            showBilling: show === 'billing' ? true : null,
+            showProfile: show === 'profile' ? true : null,
+            showHelp: show === 'help' ? true : null,
+            eventCount: events.length === 0 ? null : events.length,
 
-          events: events.map((event) => ({
-            ...event,
-            displayName: capitalizeEventName(event.name),
-          })),
-        }));
-      }else {
-        res.send(renderTemplate('dashboard', {
-          user: sessionData.User,
-          //isActive: mostRecentSubscription.status === 'ACTIVE',
-          subscription: null,
-          manageSubscriptionLink: "/#pricing",
-          showSettings: show === 'settings' ? true : null,
-          showEvents: (show === 'events') || !show ? true : null,
-          showEventAttendants: show === 'attendants' ? true : null,
-          showBilling: show === 'billing' ? true : null,
-          showProfile: show === 'profile' ? true : null,
-          showHelp: show === 'help' ? true : null,
-          eventCount: events.length,
-          events: events.map((event) => ({
-            ...event,
-            displayName: capitalizeEventName(event.name),
-          })),
+            events: events.map((event) => ({
+              ...event,
+              startDate: event.startDate.toISOString().split('T')[0],
+              endDate: event.endDate.toISOString().split('T')[0],
+              invites: event.AttendeeNotify.length,
+              expiredStatus: status(event.startDate.toISOString().split('T')[0], event.endDate.toISOString().split('T')[0]) === 'Expired' ? true : null,
+              activeStatus: status(event.startDate.toISOString().split('T')[0], event.endDate.toISOString().split('T')[0]) === 'Active' ? true : null,
+              comingSoonStatus: status(event.startDate.toISOString().split('T')[0], event.endDate.toISOString().split('T')[0]) === 'Coming Soon' ? true : null,
+              status: status(event.startDate.toISOString().split('T')[0], event.endDate.toISOString().split('T')[0]),
+              shortDescription: event.description.substring(0, 20) + '...',
+              displayName: capitalizeName(event.name),
+            })),
+          }));
+        } else {
+          
+          res.send(renderTemplate('dashboard', {
+            user: sessionData.User,
+            //isActive: mostRecentSubscription.status === 'ACTIVE',
+            subscription: null,
+            invites: null,
+            manageSubscriptionLink: "/#pricing",
+            showSettings: show === 'settings' ? true : null,
+            showEvents: (show === 'events') || !show ? true : null,
+            showEventAttendants: show === 'attendants' ? true : null,
+            showBilling: show === 'billing' ? true : null,
+            showProfile: show === 'profile' ? true : null,
+            showHelp: show === 'help' ? true : null,
+            eventCount: events.length,
+            events: events.map((event) => ({
+              ...event,
+              invites: event.AttendeeNotify.length,
+              shortDescription: event.description.substring(0, 10) + '...',
+              displayName: capitalizeName(event.name),
+            })),
           }));
         }
       }
@@ -337,9 +370,10 @@ app.use(async(req, res, next) => {
     const { email, firstName, lastName, terms, redirectTo } = req.body;
     const createUser = await prisma.user.create({
       data: {
-        email,
-        firstName,
-        lastName,
+        id: generateCUID('usr'),
+        email: email.toLowerCase().trim(),
+        firstName: firstName.toLowerCase().trim(),
+        lastName: lastName.toLowerCase().trim(),
         terms: terms === "yes" ? true : false,
       },
     });

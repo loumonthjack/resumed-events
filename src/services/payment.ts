@@ -3,6 +3,7 @@ import prisma from './database';
 import Messenger from './mailer';
 import { SubscriptionPeriodEnum, SubscriptionStatusEnum, SubscriptionTypeEnum } from '@prisma/client';
 import { stripe } from '../servers/main';
+import { generateCUID } from '../helper';
 
 export async function handleCharge(event: Request['body']) {
     if (event.data.object.payment_status !== 'paid') return false;
@@ -22,6 +23,7 @@ export async function handleCharge(event: Request['body']) {
     if (!user) throw new Error('Event not found');
     await prisma.subscription.create({
         data: {
+            id: generateCUID('sub'),
             status: SubscriptionStatusEnum.ACTIVE,
             externalId: event.data.object.subscription,
             User: {

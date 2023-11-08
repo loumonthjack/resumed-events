@@ -1,7 +1,7 @@
 import { CronJob } from 'cron';
 import prisma from '../services/database';
 import Messenger from '../services/mailer';
-import { capitalizeEventName } from '../helper';
+import { capitalizeName } from '../helper';
 const checkForNonPaidEvents = async () => {
     const nonPaid = await prisma.event.findMany({
         where: {
@@ -102,7 +102,7 @@ const archivedExpiredEvents = async () => {
         await Messenger.sendPostEventEmails(event.organizers, {
             event: {
                 ...event,
-                displayName: capitalizeEventName(event.name),
+                displayName: capitalizeName(event.name),
             },
         });
     });
