@@ -115,13 +115,12 @@ export async function createEvent(userId, name, email, logo, organizers, descrip
             startDate: new Date(startDate).toISOString(),
             endDate: new Date(endDate).toISOString(),
             theme: (theme || 'LIGHT').toUpperCase(),
-            terms: terms === 'Yes',
         },
     });
     if (!event) return null;
 
     const filteredAttendeeData = attendeeData.filter((data) => data !== "");
-    await prisma.configuration.create({
+    await prisma.eventConfiguration.create({
         data: {
             event: {
                 connect: {
@@ -130,7 +129,6 @@ export async function createEvent(userId, name, email, logo, organizers, descrip
             },
             attendeeData: filteredAttendeeData,
             showSlideControls: false,
-            showAttendeeDetails: true,
             enableEarlyAccess: false,
             createdAt: new Date(),
         },
@@ -168,7 +166,18 @@ export async function determineStripePaymentPage(name: string, email: string) {
 
         const paymentLink = await stripe.paymentLinks.retrieve(subscription.externalId);
         if (!paymentLink) return '/error';
-
+        const userSubscriptions = await prisma.subscription.findMany({
+            where: {
+                User: {
+                    email,
+                },
+                status: 'ACTIVE',
+            },
+        });
+        if (userSubscriptions.length > 0) {
+            return "https://billing.stripe.com/p/login/test_aEU7uA7bP8ta5B68ww?prefilled_email=" + email
+        }
+        // if user already has a active subscription, redirect to 
         return `${paymentLink.url}?prefilled_email=${email}`;
 }
 
@@ -223,7 +232,7 @@ export function sendCountdownTemplate(res: Response, eventInfo: any, banner: boo
     const time = new Date().getUTCDate()
     const newDate = new Date(eventInfo.startDate).getUTCDate()
     let days = time - newDate;
-    const configuration = prisma.configuration.findUnique({
+    const configuration = prisma.eventConfiguration.findUnique({
         where: {
             eventId: eventInfo.id,
         },
@@ -241,7 +250,7 @@ export function sendCountdownTemplate(res: Response, eventInfo: any, banner: boo
 }
 
 export async function generateQRCodes(eventAttendants: any[]) {
-    const configuration = await prisma.configuration.findUnique({
+    const configuration = await prisma.eventConfiguration.findUnique({
         where: {
             eventId: eventAttendants[0].eventId,
         },
@@ -260,7 +269,7 @@ export async function generateQRCodes(eventAttendants: any[]) {
 }
 
 export async function sendEventCodes(res: Response, eventInfo: any, eventId: string, qrCodes: any[]) {
-    const configuration = await prisma.configuration.findUnique({
+    const configuration = await prisma.eventConfiguration.findUnique({
         where: {
             eventId: eventInfo.id,
         },
@@ -350,10 +359,6 @@ export const validEventMiddleware = async (req: Request, res: Response, next: Ne
         return res.redirect('/');
     }
 
-    if (!eventInfo.isPaid) {
-        return sendErrorTemplate(res, 'Event not paid for');
-    }
-
     const currentDateWithoutTime = new Date();
     currentDateWithoutTime.setHours(0, 0, 0, 0);
 
@@ -385,7 +390,7 @@ export function $sendThankYouTemplate(req: Request, res: Response) {
 }
 
 export async function $sendEventUpdateTemplate(req: Request, res: Response, eventInfo: any) {
-    const config = await prisma.configuration.findUnique({
+    const config = await prisma.eventConfiguration.findUnique({
         where: {
             eventId: eventInfo.id,
         },

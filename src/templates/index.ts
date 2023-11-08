@@ -8,25 +8,6 @@ const WEBSITE_BASE_PATH = "./website";
 const readFile = (basePath, fileName) =>
     fs.readFileSync(path.join(__dirname, `${basePath}/${fileName}`)).toString();
 
-const websiteTemplates = {
-    error: readFile(WEBSITE_BASE_PATH, "error.html"),
-    eventOrganizerOnboarding: readFile(WEBSITE_BASE_PATH, "event-organizer-onboarding.html"),
-    eventUserOnboarding: readFile(WEBSITE_BASE_PATH, "event-user-onboarding.html"),
-    eventUserCodeSignup: readFile(WEBSITE_BASE_PATH, "event-user-code-signup.html" ),
-    eventCode: readFile(WEBSITE_BASE_PATH, "event-landing.html"),
-    eventUserCode: readFile(WEBSITE_BASE_PATH, "event-user-code.html"),
-    eventCodeView: readFile(WEBSITE_BASE_PATH, "event-portal.html"),
-    eventUpdate: readFile(WEBSITE_BASE_PATH, "event-update.html"),
-    homepage: readFile(WEBSITE_BASE_PATH, "homepage.html"),
-    eventComingSoon: readFile(WEBSITE_BASE_PATH, "event-coming-soon.html"),
-    terms: readFile(WEBSITE_BASE_PATH, "terms.html"),
-    privacy: readFile(WEBSITE_BASE_PATH, "privacy.html"),
-    eventThankYou: readFile(WEBSITE_BASE_PATH, "thank-you.html"),
-    login: readFile(WEBSITE_BASE_PATH, "login.html"),
-    signup: readFile(WEBSITE_BASE_PATH, "signup.html"),
-    dashboard: readFile(WEBSITE_BASE_PATH, "dashboard.html"),
-};
-
 const emailTemplates = {
     newEvent: readFile(EMAIL_BASE_PATH, "new-event.html"),
     unpaidEvent: readFile(EMAIL_BASE_PATH, "unpaid-event.html"),
@@ -62,9 +43,9 @@ export const renderTemplate = (template, data = {}) => {
         case "new-event-email":
             return Mustache.render(emailTemplates.newEvent, { ...data });
         default:
-            const matchingTemplate = process.env.PRODUCTION ? websiteTemplates[template] : getTemplate(template);
+            const matchingTemplate = getTemplate(template);
             if (!matchingTemplate) {
-                return Mustache.render(websiteTemplates.error, renderData);
+                return Mustache.render(map["error"], renderData);
             }
 
             if (template === "eventCodeView") {
@@ -93,7 +74,7 @@ const map = {
     login: "login.html",
     signup: "signup.html",
     dashboard: "dashboard.html",
-}
+};
 
 function getTemplate(template) {
     return readFile(WEBSITE_BASE_PATH, map[template])

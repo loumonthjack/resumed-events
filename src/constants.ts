@@ -52,6 +52,7 @@ export const AWS_ACCESS_KEY_ID: string | undefined = process.env.AWS_ACCESS_KEY_
 export const AWS_SECRET_ACCESS_KEY: string | undefined = process.env.AWS_SECRET_ACCESS_KEY;
 export const AWS_REGION: string | undefined = process.env.AWS_REGION;
 export const AWS_BUCKET_NAME: string = process.env.AWS_BUCKET_NAME || `resumed-events-${ENVIRONMENT}`;
+export const CDN = `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/dist`;
 
 // Define Stripe webhook and secret keys
 export const STRIPE_WEBHOOK_KEY: string | undefined = isProd ? process.env.STRIPE_WEBHOOK_KEY : process.env.STRIPE_WEBHOOK_KEY_TEST;

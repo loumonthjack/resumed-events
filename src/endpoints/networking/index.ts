@@ -45,7 +45,7 @@ eventRouter.get('/attendee/:eventId/notify', async (req: Request, res: Response)
 // show attendee form page
 eventRouter.get('/attendee/:eventId/create', validEventMiddleware, async (req: Request, res: Response) => {
     const eventInfo = await getEventInfo(req.params.eventId);
-    const config = await prisma.configuration.findUnique({
+    const config = await prisma.eventConfiguration.findUnique({
         where: {
             eventId: eventInfo.id,
         },
@@ -100,7 +100,7 @@ eventRouter.post('/attendee/:eventId/create', validEventMiddleware, async (req: 
     if (isBlackListedUrl(url)) {
         return redirectOnError(res, req.params.eventId, 'blacklist');
     }
-    const configuration = await prisma.configuration.findUnique({
+    const configuration = await prisma.eventConfiguration.findUnique({
         where: {
             eventId: activeEvent.id,
         },
@@ -151,7 +151,7 @@ eventRouter.get('/attendee/:eventId/share/:attendeeId', validEventMiddleware, as
     if (!attendant) {
         return sendErrorTemplate(res, 'Attendee not found');
     }
-    const configuration = await prisma.configuration.findUnique({
+    const configuration = await prisma.eventConfiguration.findUnique({
         where: {
             eventId: eventInfo.id,
         },
@@ -185,7 +185,6 @@ eventRouter.get('/update/:eventId/:code', async (req, res, next) => {
     const eventInfo = await prisma.event.findUnique({
         where: {
             id: req.params.eventId,
-            tempKey: req.params.code,
         },
     });
 
@@ -240,7 +239,7 @@ eventRouter.post('/update/:eventId/:code', async (req, res, next) => {
         }
         const updatedEvent = await prisma.event.update({
             where: {
-                tempKey: code,
+                id: activeEvent.id,
             },
             data: {
                 ...activeEvent,
@@ -253,7 +252,7 @@ eventRouter.post('/update/:eventId/:code', async (req, res, next) => {
         if (!updatedEvent) {
             return sendErrorTemplate(res, 'Error updating event');
         }
-        const existingConfig = await prisma.configuration.findUnique({
+        const existingConfig = await prisma.eventConfiguration.findUnique({
             where: {
                 eventId: updatedEvent.id,
             },
@@ -278,7 +277,7 @@ eventRouter.post('/update/:eventId/:code', async (req, res, next) => {
                         attendeeQuestions.splice(attendeeQuestions.indexOf(question), 1);
                     }
                 });
-                await prisma.configuration.update({
+                await prisma.eventConfiguration.update({
                     where: {
                         eventId: updatedEvent.id,
                     },
