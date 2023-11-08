@@ -4,11 +4,11 @@ import prisma from '../../services/database';
 import { renderTemplate } from '../../templates';
 import Messenger from '../../services/mailer';
 import { uploadEventLogo, uploadProfilePicture } from '../../services/uploader';
-import { capitalizeEventName, removeDuplicates } from '../../helper';
+import { capitalizeName, generateCUID, removeDuplicates } from '../../helper';
 import multer from 'multer';
 import cuid from 'cuid';
 import QRCode from '../../services/generator';
-import { SERVER_URL } from '../../constants';
+import { SERVER_URL, STRIPE_MANAGE_LINK } from '../../constants';
 import { stripe } from '../../servers/main';
 
 const MAX_EVENTS = 3;
@@ -64,14 +64,10 @@ type EventAttendant = {
     eventId: string;
 };
 export async function getLoggedInUser(req, res) {
-    const session = await prisma.session.findUnique({
-        where: {
-            id: req.cookies['resumed-session'],
-        },
-    });
+
     const loggedInUser = await prisma.user.findUnique({
-    where: {
-            id: session.userId,
+        where: {
+            id: req['user'].id,
         },
     });
     if (!loggedInUser) {
@@ -98,14 +94,20 @@ export function adjustEndDate(endDate: string, eventDuration: number) {
     return endDate;
 }
 
-export async function createEvent(userId, name, email, logo, organizers, description, attendeeData, startDate, endDate, theme, terms) {
-    const organizerEmails = organizers?.split(',').map((email) => email.trim());
-    const emails = [email, ...organizerEmails];
+export async function createEvent(userId, event, configuration) {
+    const organizerEmails = event.organizers?.split(',').map((email) => email.toLowerCase().trim());
+    const { name, logo, description, startDate, endDate } = event;
+    const user = await prisma.user.findUnique({
+        where: {
+            id: userId,
+        },
+    });
+    const emails = [user.email, ...organizerEmails];
     // remove empty strings from array
     const filteredEmails = emails.filter((email) => email !== "");
-    const event = await prisma.event.create({
+    const create = await prisma.event.create({
         data: {
-            id: cuid(),
+            id: generateCUID('evt'),
             name: name.toLowerCase(),
             userId,
             logo: logo || null,
@@ -114,27 +116,53 @@ export async function createEvent(userId, name, email, logo, organizers, descrip
             description: description || null,
             startDate: new Date(startDate).toISOString(),
             endDate: new Date(endDate).toISOString(),
-            theme: (theme || 'LIGHT').toUpperCase(),
+            theme: 'LIGHT',
         },
     });
-    if (!event) return null;
-
+    if (!create) return null;
+    const { attendeeData, showSlideControls, enableEarlyAccess, showAttendeeLeaderboard, notifyAttendees } = configuration.event;
     const filteredAttendeeData = attendeeData.filter((data) => data !== "");
     await prisma.eventConfiguration.create({
         data: {
+            id: generateCUID('evtcfg'),
             event: {
                 connect: {
-                    id: event.id,
+                    id: create.id,
                 },
             },
             attendeeData: filteredAttendeeData,
-            showSlideControls: false,
-            enableEarlyAccess: false,
+            showSlideControls: showSlideControls,
+            enableEarlyAccess: enableEarlyAccess,
+            showAttendeeLeaderboard: showAttendeeLeaderboard,
+            setLimit: 250,
             createdAt: new Date(),
         },
     });
 
-    return event;
+    notifyAttendees?.forEach(async (email) => {
+        await prisma.attendeeNotify.create({
+            data: {
+                id: generateCUID('attn'),
+                event: {
+                    connect: {
+                        id: create.id,
+                    },
+                },
+                email: email.toLowerCase().trim(),
+                createdAt: new Date(),
+                hasSent: false,
+            },
+        });
+        if (enableEarlyAccess) {
+            await Messenger.sendNotifyEmails(email, {
+                    ...create,
+                    startDate: new Date(event.startDate).toISOString(),
+                    endDate: new Date(event.endDate).toISOString(),
+            });
+        }
+    });
+
+    return create;
 }
 export async function handleProfilePictureUpload(profilePicture, userId) {
     const upload = await uploadProfilePicture(profilePicture.buffer, profilePicture.mimetype, userId);
@@ -161,24 +189,24 @@ export async function handleEventLogoUpload(eventLogo, eventId) {
 }
 
 export async function determineStripePaymentPage(name: string, email: string) {
-        const subscription = await prisma.subscriptionType.findUnique({ where: { name: name.toUpperCase() as SubscriptionTypeEnum } });
-        if (!subscription) return '/error';
+    const subscription = await prisma.subscriptionType.findUnique({ where: { name: name.toUpperCase() as SubscriptionTypeEnum } });
+    if (!subscription) return '/error';
 
-        const paymentLink = await stripe.paymentLinks.retrieve(subscription.externalId);
-        if (!paymentLink) return '/error';
-        const userSubscriptions = await prisma.subscription.findMany({
-            where: {
-                User: {
-                    email,
-                },
-                status: 'ACTIVE',
+    const paymentLink = await stripe.paymentLinks.retrieve(subscription.externalId);
+    if (!paymentLink) return '/error';
+    const userSubscriptions = await prisma.subscription.findMany({
+        where: {
+            User: {
+                email,
             },
-        });
-        if (userSubscriptions.length > 0) {
-            return "https://billing.stripe.com/p/login/test_aEU7uA7bP8ta5B68ww?prefilled_email=" + email
-        }
-        // if user already has a active subscription, redirect to 
-        return `${paymentLink.url}?prefilled_email=${email}`;
+            status: 'ACTIVE',
+        },
+    });
+    if (userSubscriptions.length > 0) {
+        return STRIPE_MANAGE_LINK + email
+    }
+    // if user already has a active subscription, redirect to 
+    return `${paymentLink.url}?prefilled_email=${email}`;
 }
 
 export async function getEventInfo(eventId: string) {
@@ -238,13 +266,13 @@ export function sendCountdownTemplate(res: Response, eventInfo: any, banner: boo
         },
     });
     return res.send(renderTemplate('eventComingSoon', {
-        message: capitalizeEventName(eventInfo.name) + ' is just ' + days + (days === 1 ? ' day' : ' days') + ' away!',
+        message: capitalizeName(eventInfo.name) + ' is just ' + days + (days === 1 ? ' day' : ' days') + ' away!',
         configuration,
         showBanner: banner,
         event: {
             ...eventInfo,
             startDate: eventInfo.startDate,
-            displayName: capitalizeEventName(eventInfo.name),
+            displayName: capitalizeName(eventInfo.name),
         },
     }));
 }
@@ -283,7 +311,7 @@ export async function sendEventCodes(res: Response, eventInfo: any, eventId: str
             qrCodes,
             event: {
                 ...eventInfo,
-                displayName: capitalizeEventName(eventInfo.name),
+                displayName: capitalizeName(eventInfo.name),
             },
             configuration,
         }));
@@ -293,37 +321,53 @@ export async function sendEventCodes(res: Response, eventInfo: any, eventId: str
         qrCode: qrCodes[0],
         event: {
             ...eventInfo,
-            displayName: capitalizeEventName(eventInfo.name),
+            displayName: capitalizeName(eventInfo.name),
         },
         configuration,
     }));
 }
 
 export async function $handleNetworkingPost(req: Request, res: Response) {
+    console.log("request", req.body)
     if (!req.body) {
         return res.status(400).send('Missing event');
     }
 
-    const { name: eventName, email: emailAddress, organizers, description, attendee_data, startDate, endDate, captureType: type, terms: acceptTerms, theme } = req.body;
+    const { name: eventName, invites, organizers, description, email, fullName, company, title, access, toggle, leaderboard, startDate, endDate } = req.body;
+    let notifyAttendees = invites ? invites.split(',') : null;
+    const attendeeData = []
+    fullName === 'true' ? attendeeData.push('fullName') : null;
+    email === 'true' ? attendeeData.push('emailAddress') : null;
+    title === 'true' ? attendeeData.push('jobTitle') : null;
+    company === 'true' ? attendeeData.push('company') : null;
+    let configuration = {
+        event: {
+            enableEarlyAccess: access === 'true',
+            showSlideControls: toggle === 'true',
+            showAttendeeLeaderboard: leaderboard === 'true',
+            attendeeData,
+            notifyAttendees
+        }
+    }
+    let event = {
+        name: eventName,
+        organizers: organizers,
+        description: description,
+        startDate: startDate,
+        endDate: endDate,
+    }
     const eventLogo = req.file;
-    const eventExists = await checkEventExists(emailAddress);
-    if (eventExists) {
-        return res.redirect(`/create?error=true&type=exists`);
-    }
-
     const eventDuration = computeEventDuration(startDate, endDate);
-    if (eventDuration > MAX_EVENT_DAYS) {
-        return res.redirect(`/#contact`);
-    }
     const user = await getLoggedInUser(req, res);
     const endDateString = adjustEndDate(endDate, eventDuration);
-    const newEvent = await createEvent(user.id, eventName, emailAddress, null, organizers, description, attendee_data, startDate, endDateString, theme, acceptTerms);
+    event.endDate = endDateString;
+    const newEvent = await createEvent(user.id, event, configuration);
     if (!newEvent) {
         return res.status(500).send('Error creating event');
     }
     await QRCode.create({
-        name: capitalizeEventName(newEvent.name),
-        title: capitalizeEventName(newEvent.name) + ' QR Code',
+        name: capitalizeName(newEvent.name),
+        title: capitalizeName(newEvent.name) + ' QR Code',
         url: 'http://' + SERVER_URL + '/attendee/' + newEvent.id + '/create',
     }).then(async (code) => {
         await prisma.event.update({
@@ -337,14 +381,13 @@ export async function $handleNetworkingPost(req: Request, res: Response) {
         return code;
 
     });
-
-
     if (eventLogo) {
         const uploadSuccess = await handleEventLogoUpload(eventLogo, newEvent.id);
         if (!uploadSuccess) {
             return res.status(500).send('Error uploading logo');
         }
     }
+
 
     return res.send({ success: true, eventId: newEvent.id });
 }
@@ -358,6 +401,15 @@ export const validEventMiddleware = async (req: Request, res: Response, next: Ne
     if (eventInfo.isArchived) {
         return res.redirect('/');
     }
+    const eventConfiguration = await prisma.eventConfiguration.findUnique({
+        where: {
+            eventId: eventInfo.id,
+        },
+    });
+    if (!eventConfiguration) {
+        return sendErrorTemplate(res, 'Event not found');
+    }
+    if (eventConfiguration.enableEarlyAccess) return next();
 
     const currentDateWithoutTime = new Date();
     currentDateWithoutTime.setHours(0, 0, 0, 0);
@@ -410,7 +462,7 @@ export async function $sendEventUpdateTemplate(req: Request, res: Response, even
             linkedin: eventInfo.type?.toLowerCase() === 'linkedin',
             personal: eventInfo.type?.toLowerCase() === 'personal',
             both: eventInfo.type?.toLowerCase() === 'both',
-            displayName: capitalizeEventName(eventInfo.name),
+            displayName: capitalizeName(eventInfo.name),
         },
         configuration: {
             fullName: config?.attendeeData.includes('fullName'),
@@ -427,7 +479,7 @@ export function $sendEventLandingTemplate(req: Request, res: Response, eventInfo
     const eventCode = renderTemplate('eventCode', {
         event: {
             ...eventInfo,
-            displayName: capitalizeEventName(eventInfo.name),
+            displayName: capitalizeName(eventInfo.name),
         },
     });
     return res.send(eventCode);
@@ -445,7 +497,7 @@ export async function $sendAttendeeCodeTemplate(req: Request, res: Response, eve
     const eventCode = renderTemplate('eventUserCode', {
         event: {
             ...eventInfo,
-            displayName: capitalizeEventName(eventInfo.name),
+            displayName: capitalizeName(eventInfo.name),
         },
         attendee
     });
