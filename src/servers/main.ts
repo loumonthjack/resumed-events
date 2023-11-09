@@ -112,7 +112,13 @@ const expressServer = async () => {
       next()
     };
     app.use(setUser);
-    app.get('/login', async (req, res) => res.send(renderTemplate('login')));
+    const redirectIfLoggedIn = async (req, res, next) => {
+      if (req['user']) {
+        return res.redirect('/dashboard');
+      }
+      next();
+    }
+    app.get('/login', redirectIfLoggedIn, async (req, res) => res.send(renderTemplate('login')));
     app.post('/login', upload.any(), async (req, res) => {
       const { email } = req.body;
       const user = await prisma.user.findUnique({
@@ -489,7 +495,7 @@ const expressServer = async () => {
       }
     });
 
-    app.get('/signup', async (req, res) => res.send(renderTemplate('signup')));
+    app.get('/signup', redirectIfLoggedIn, async (req, res) => res.send(renderTemplate('signup')));
     app.post('/signup', upload.single('profilePicture'), async (req, res) => {
       const { email, firstName, lastName, terms, redirectTo } = req.body;
       const createUser = await prisma.user.create({
