@@ -43,16 +43,12 @@ const expressServer = async () => {
     }));
     app.post('/webhook', express.raw({ type: 'application/json' }), async (request, response) => {
       let event;
-      if (NODE_ENV === 'production') {
-        const sig = request.headers['stripe-signature'];
-        try {
-          event = stripe.webhooks.constructEvent(request.body, sig, STRIPE_WEBHOOK_KEY);
-        } catch (err) {
-          response.status(400).send(`Webhook Error: ${err.message}`);
-          return;
-        }
-      } else {
-        event = JSON.parse(Buffer.from(request.body).toString('utf-8'));
+      const sig = request.headers['stripe-signature'];
+      try {
+        event = stripe.webhooks.constructEvent(request.body, sig, STRIPE_WEBHOOK_KEY);
+      } catch (err) {
+        response.status(400).send(`Webhook Error: ${err.message}`);
+        return;
       }
       switch (event.type) {
         case 'checkout.session.completed':
@@ -85,11 +81,11 @@ const expressServer = async () => {
     app.get('/health-check', (req, res) => res.status(200).send('OK'));
     app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
     app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
-    
+
     app.get('/', async (req, res) => res.send(renderTemplate('homepage', {
       user: req['user'] || null,
-      proPaymentLink: req['user'] ? await determineStripePaymentPage("PRO", req['user']?.email) : '/signup?redirectTo=PRO',
-      basicPaymentLink: req['user'] ? await determineStripePaymentPage("BASIC", req['user']?.email) : '/signup?redirectTo=BASIC',
+      proPaymentLink: await determineStripePaymentPage("PRO", req['user'] ? req['user']?.email : undefined),
+      basicPaymentLink: await determineStripePaymentPage("BASIC", req['user'] ? req['user']?.email : undefined),
       subscription: req['subscription'] && req['subscription'].length > 0 ? SERVER_URL + "/dashboard?show=billing" : null,
     })));
     const setUser = async (req, res, next) => {
@@ -256,7 +252,7 @@ const expressServer = async () => {
       next();
     }
     app.post('/create', authRequired, upload.single('eventLogo'), $handleNetworkingPost);
-    app.post('/profile/update', authRequired, upload.single('profilePicture'), async (req, res) => { 
+    app.post('/profile/update', authRequired, upload.single('profilePicture'), async (req, res) => {
       const { firstName, lastName } = req.body;
       const userId = req['user'].id;
       // get user
@@ -307,7 +303,7 @@ const expressServer = async () => {
       });
       res.send({ success: true });
     });
-    
+
 
     app.get('/logout', authRequired, async (req, res) => {
       const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
@@ -321,7 +317,7 @@ const expressServer = async () => {
       }
       return res.redirect('/login');
     });
-    
+
     app.get('/dashboard', async (req, res) => {
       const { show } = req.query;
       const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];

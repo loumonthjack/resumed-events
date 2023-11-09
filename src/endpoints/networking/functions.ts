@@ -188,7 +188,7 @@ export async function handleEventLogoUpload(eventLogo, eventId) {
     return false;
 }
 
-export async function determineStripePaymentPage(name: string, email: string) {
+export async function determineStripePaymentPage(name: string, email?: string) {
     const subscription = await prisma.subscriptionType.findUnique({ where: { name: name.toUpperCase() as SubscriptionTypeEnum } });
     if (!subscription) return '/error';
 
@@ -206,7 +206,7 @@ export async function determineStripePaymentPage(name: string, email: string) {
         return STRIPE_MANAGE_LINK + email
     }
     // if user already has a active subscription, redirect to 
-    return `${paymentLink.url}?prefilled_email=${email}`;
+    return email ?`${paymentLink.url}?prefilled_email=${email}` : paymentLink.url;
 }
 
 export async function getEventInfo(eventId: string) {
