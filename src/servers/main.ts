@@ -85,7 +85,7 @@ const expressServer = async () => {
     app.get('/health-check', (req, res) => res.status(200).send('OK'));
     app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
     app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
-    app.use(async (req, res, next) => {
+    const setUser = async (req, res, next) => {
       // if resumed-session cookie exists, set user to req.user
       const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
       if (cookie) {
@@ -107,120 +107,14 @@ const expressServer = async () => {
         }
       }
       next()
-    })
-    const setAuth = async (req, res, next) => {
-      const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
-      if (cookie) {
-        // if session exists and trying to access login or signup, redirect to dashboard
-        const session = await prisma.session.findUnique({
-          where: {
-            id: cookie.toString(),
-          },
-        });
-        if (!session) {
-          res.cookie('resumed-session', '', { maxAge: 0 });
-          return res.redirect(`/login?error=no-session`);
-        }
-        if (req.path === '/login' || req.path === '/signup') {
-          return res.redirect(`/dashboard`);
-        }
-        next();
-      } else {
-        res.cookie('resumed-session', '', { maxAge: 0 });
-        // clear expired sessions, sessions last 24 hours
-        await prisma.session.deleteMany({
-          where: {
-            createdAt: {
-              lte: new Date(new Date().getTime() - 24 * 60 * 60 * 1000),
-            },
-          },
-        });
-        if (req.path === '/login' || req.path === '/signup' || req.path === '/verify' || req.path === '/attendee') {
-          return next();
-        } else {
-          return res.redirect(`/login`);
-        }
-      }
-    }
-    app.use(setAuth);
-    const authRequired = async (req, res, next) => {
-      if (!req['user']) {
-        return res.redirect('/login');
-      }
-      next();
-    }
+    };
+    app.use(setUser);
     app.get('/', async (req, res) => res.send(renderTemplate('homepage', {
       user: req['user'] || null,
       proPaymentLink: await determineStripePaymentPage("PRO", req['user']?.email),
       basicPaymentLink: await determineStripePaymentPage("BASIC", req['user']?.email),
       subscription: req['subscription'] && req['subscription'].length > 0 ? SERVER_URL + "/dashboard?show=billing" : null,
     })));
-    app.post('/create', authRequired, upload.single('eventLogo'), $handleNetworkingPost);
-    app.post('/profile/update', authRequired, upload.single('profilePicture'), async (req, res) => { 
-      const { firstName, lastName } = req.body;
-      const userId = req['user'].id;
-      // get user
-      const user = await prisma.user.findUnique({
-        where: {
-          id: userId,
-        },
-      });
-      await prisma.user.update({
-        where: {
-          id: userId,
-        },
-        data: {
-          ...user,
-          firstName: firstName ? firstName.toLowerCase().trim() : user.firstName,
-          lastName: lastName ? lastName.toLowerCase().trim() : user.lastName,
-        },
-      });
-      if (req.file) {
-        await handleProfilePictureUpload(req.file, userId);
-      }
-      res.send({ success: true });
-    });
-    app.post('/config/update', authRequired, upload.any(), async (req, res) => {
-      const { eventStart, eventReport, productUpdate } = req.body;
-      const allowPromotionalEmail = productUpdate === 'true' ? true : false;
-      const allowEventStartEmail = eventStart === 'true' ? true : false;
-      const allowEventEndEmail = eventReport === 'true' ? true : false;
-      const userId = req['user'].id;
-      await prisma.configuration.upsert({
-        where: {
-          userId,
-        },
-        update: {
-          allowPromotionalEmail,
-          allowEventStartEmail,
-          allowEventEndEmail,
-          updatedAt: new Date(),
-        },
-        create: {
-          id: generateCUID('cfg'),
-          allowPromotionalEmail,
-          allowEventStartEmail,
-          allowEventEndEmail,
-          createdAt: new Date(),
-          userId,
-        },
-      });
-      res.send({ success: true });
-    });
-    
-
-    app.get('/logout', async (req, res) => {
-      const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
-      if (cookie) {
-        await prisma.session.delete({
-          where: {
-            id: cookie.toString(),
-          },
-        });
-        res.cookie('resumed-session', '', { maxAge: 0 });
-      }
-      return res.redirect('/login');
-    });
     app.get('/login', async (req, res) => res.send(renderTemplate('login')));
     app.post('/login', upload.any(), async (req, res) => {
       const { email } = req.body;
@@ -319,6 +213,114 @@ const expressServer = async () => {
         }
       }
     });
+    const setAuth = async (req, res, next) => {
+      const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
+      if (cookie) {
+        // if session exists and trying to access login or signup, redirect to dashboard
+        const session = await prisma.session.findUnique({
+          where: {
+            id: cookie.toString(),
+          },
+        });
+        if (!session) {
+          res.cookie('resumed-session', '', { maxAge: 0 });
+          return res.redirect(`/login?error=no-session`);
+        }
+        if (req.path === '/login' || req.path === '/signup') {
+          return res.redirect(`/dashboard`);
+        }
+        next();
+      } else {
+        res.cookie('resumed-session', '', { maxAge: 0 });
+        // clear expired sessions, sessions last 24 hours
+        await prisma.session.deleteMany({
+          where: {
+            createdAt: {
+              lte: new Date(new Date().getTime() - 24 * 60 * 60 * 1000),
+            },
+          },
+        });
+        if (req.path === '/login' || req.path === '/signup' || req.path === '/verify' || req.path === '/attendee') {
+          return next();
+        } else {
+          return res.redirect(`/login`);
+        }
+      }
+    }
+    app.use(setAuth);
+    const authRequired = async (req, res, next) => {
+      if (!req['user']) {
+        return res.redirect('/login');
+      }
+      next();
+    }
+    app.post('/create', authRequired, upload.single('eventLogo'), $handleNetworkingPost);
+    app.post('/profile/update', authRequired, upload.single('profilePicture'), async (req, res) => { 
+      const { firstName, lastName } = req.body;
+      const userId = req['user'].id;
+      // get user
+      const user = await prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+      await prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          ...user,
+          firstName: firstName ? firstName.toLowerCase().trim() : user.firstName,
+          lastName: lastName ? lastName.toLowerCase().trim() : user.lastName,
+        },
+      });
+      if (req.file) {
+        await handleProfilePictureUpload(req.file, userId);
+      }
+      res.send({ success: true });
+    });
+    app.post('/config/update', authRequired, upload.any(), async (req, res) => {
+      const { eventStart, eventReport, productUpdate } = req.body;
+      const allowPromotionalEmail = productUpdate === 'true' ? true : false;
+      const allowEventStartEmail = eventStart === 'true' ? true : false;
+      const allowEventEndEmail = eventReport === 'true' ? true : false;
+      const userId = req['user'].id;
+      await prisma.configuration.upsert({
+        where: {
+          userId,
+        },
+        update: {
+          allowPromotionalEmail,
+          allowEventStartEmail,
+          allowEventEndEmail,
+          updatedAt: new Date(),
+        },
+        create: {
+          id: generateCUID('cfg'),
+          allowPromotionalEmail,
+          allowEventStartEmail,
+          allowEventEndEmail,
+          createdAt: new Date(),
+          userId,
+        },
+      });
+      res.send({ success: true });
+    });
+    
+
+    app.get('/logout', authRequired, async (req, res) => {
+      const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
+      if (cookie) {
+        await prisma.session.delete({
+          where: {
+            id: cookie.toString(),
+          },
+        });
+        res.cookie('resumed-session', '', { maxAge: 0 });
+      }
+      return res.redirect('/login');
+    });
+    
     app.get('/dashboard', async (req, res) => {
       const { show } = req.query;
       const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
