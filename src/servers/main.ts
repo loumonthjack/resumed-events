@@ -85,6 +85,13 @@ const expressServer = async () => {
     app.get('/health-check', (req, res) => res.status(200).send('OK'));
     app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
     app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
+    
+    app.get('/', async (req, res) => res.send(renderTemplate('homepage', {
+      user: req['user'] || null,
+      proPaymentLink: req['user'] ? await determineStripePaymentPage("PRO", req['user']?.email) : '/signup?redirectTo=PRO',
+      basicPaymentLink: req['user'] ? await determineStripePaymentPage("BASIC", req['user']?.email) : '/signup?redirectTo=BASIC',
+      subscription: req['subscription'] && req['subscription'].length > 0 ? SERVER_URL + "/dashboard?show=billing" : null,
+    })));
     const setUser = async (req, res, next) => {
       // if resumed-session cookie exists, set user to req.user
       const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
@@ -109,12 +116,6 @@ const expressServer = async () => {
       next()
     };
     app.use(setUser);
-    app.get('/', async (req, res) => res.send(renderTemplate('homepage', {
-      user: req['user'] || null,
-      proPaymentLink: await determineStripePaymentPage("PRO", req['user']?.email),
-      basicPaymentLink: await determineStripePaymentPage("BASIC", req['user']?.email),
-      subscription: req['subscription'] && req['subscription'].length > 0 ? SERVER_URL + "/dashboard?show=billing" : null,
-    })));
     app.get('/login', async (req, res) => res.send(renderTemplate('login')));
     app.post('/login', upload.any(), async (req, res) => {
       const { email } = req.body;
