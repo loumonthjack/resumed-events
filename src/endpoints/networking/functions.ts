@@ -78,7 +78,7 @@ export async function getLoggedInUser(req, res) {
 
 export async function checkEventExists(userId: string) {
     const eventInfo = await prisma.event.findMany({ where: { userId } });
-    return eventInfo.length >= MAX_EVENTS;
+    return eventInfo.length;
 }
 
 export function computeEventDuration(startDate: string, endDate: string) {
@@ -333,12 +333,12 @@ export async function $handleNetworkingPost(req: Request, res: Response) {
         return res.status(400).send('Missing event');
     }
 
-    const { name: eventName, invites, organizers, description, email, fullName, company, title, access, toggle, leaderboard, startDate, endDate } = req.body;
+    const { name: eventName, invites, organizers, description, email, fullName, company, jobTitle, access, toggle, leaderboard, startDate, endDate } = req.body;
     let notifyAttendees = invites ? invites.split(',') : null;
     const attendeeData = []
     fullName === 'true' ? attendeeData.push('fullName') : null;
     email === 'true' ? attendeeData.push('emailAddress') : null;
-    title === 'true' ? attendeeData.push('jobTitle') : null;
+    jobTitle === 'true' ? attendeeData.push('jobTitle') : null;
     company === 'true' ? attendeeData.push('company') : null;
     let configuration = {
         event: {
