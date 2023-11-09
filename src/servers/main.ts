@@ -82,6 +82,9 @@ const expressServer = async () => {
       }));
     }
     app.use(express.urlencoded({ extended: true }));
+    app.get('/health-check', (req, res) => res.status(200).send('OK'));
+    app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
+    app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
     app.use(async (req, res, next) => {
       // if resumed-session cookie exists, set user to req.user
       const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
@@ -204,9 +207,7 @@ const expressServer = async () => {
       });
       res.send({ success: true });
     });
-    app.get('/health-check', (req, res) => res.status(200).send('OK'));
-    app.get('/terms', async (req, res) => res.send(renderTemplate('terms')));
-    app.get('/privacy', async (req, res) => res.send(renderTemplate('privacy')));
+    
 
     app.get('/logout', async (req, res) => {
       const cookie = req.headers.cookie?.split(';').find((cookie) => cookie.includes('resumed-session'))?.split('=')[1];
