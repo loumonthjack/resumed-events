@@ -1,12 +1,30 @@
 {
   "compilerOptions": {
+    "strict": true,
     "rootDirs": ["src"],
-    "outDir": "./dist",
+    "outDir": "dist",
     "lib": ["es2021"],
     "target": "es2021",
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@server/*": ["src/server/*"]
+    }
+  },
+  "files": [
+    "src/server/main.ts",
+    "src/@types/index.d.ts",
+  ],
+  // "include": ["src/server/*", "src/@types/index.d.ts"],
+  // "exclude": [
+  //   "node_modules",
+  //   "src/server/worker.ts",
+  //   "src/server/endpoints/networking/*"
+  // ],
+  "watchOptions": {
+    "excludeDirectories": ["**/node_modules", "out"]
   }
 }

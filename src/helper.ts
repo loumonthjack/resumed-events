@@ -1,8 +1,3 @@
-import cuid from 'cuid';
-export const generateCUID = () => {
-    return cuid();
-};
-
 // Extracted function to capitalize event names
 export const capitalizeEventName = (name: string) => {
     const parts = name.split(' ');

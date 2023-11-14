@@ -1,0 +1,17 @@
+---
+import Head from "../Head.astro";
+
+const { title, description } = Astro.props;
+---
+
+<html lang="en" class="scoll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Head title={title} description={description} />
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

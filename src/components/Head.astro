@@ -1,0 +1,40 @@
+---
+// TODO import paths eg @server/constants
+import { NETWORKING_CONFIG } from "../server/constants";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const pathname = Astro.url.pathname;
+const title = Astro.props.title ? `Resumed Events | ${Astro.props.title}` : "Resumed Events";
+const desc = Astro.props.description || "Software that provide event organizers seamless qr code generation for attendees to connect!";
+---
+
+<head>
+  <meta charset="utf-8" />
+  <title>{`Resumed Events | ${title}`}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta content={desc} name="description" />
+  <meta content="Resumed" name="author" />
+  <meta property="og:url" content=`https://resumed.events/${pathname}` />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={`${title}`} />
+  <meta property="og:description" content={`${title} - ${desc}`} />
+  <meta
+    property="og:image"
+    content=`${NETWORKING_CONFIG.CDN}/assets/images/logo.png`
+  />
+  <!-- favicon -->
+  <link
+    rel="shortcut icon"
+    href=`${NETWORKING_CONFIG.CDN}/assets/images/favicon_io/favicon.ico`
+  />
+
+  <!-- Style css -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.css"
+    rel="stylesheet"
+  />
+</head>

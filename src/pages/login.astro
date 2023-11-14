@@ -1,0 +1,360 @@
+---
+import BaseLayout from "../components/layout/BaseLayout.astro";
+
+import { NETWORKING_CONFIG } from "../server/constants";
+---
+
+<BaseLayout
+  title="Login Page"
+  description="Software that provide event organizers seamless qr code generation for attendees to connect!"
+>
+  <nav
+    class="bg-white dark:bg-gray-900 fixed w-full z-20 top-0 left-0 border-b border-gray-200 dark:border-gray-600"
+  >
+    <div
+      class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4"
+    >
+      <a href="https://resumed.events/" class="flex items-center">
+        <img
+          src=`${NETWORKING_CONFIG.CDN}/assets/images/icon.png`
+          class="h-16 mr-3"
+          alt="Resumed Logo"
+        />
+        <!--<span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Resumed</span>-->
+      </a>
+      <div class="flex md:order-2">
+        <button
+          type="button"
+          hidden
+          class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center mr-3 md:mr-0 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          >Get Started</button
+        >
+        <button
+          data-collapse-toggle="navbar-sticky"
+          type="button"
+          class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+          aria-controls="navbar-sticky"
+          aria-expanded="false"
+        >
+          <span class="sr-only">Open main menu</span>
+          <svg
+            class="w-5 h-5"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 17 14"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M1 1h15M1 7h15M1 13h15"></path>
+          </svg>
+        </button>
+      </div>
+      <div
+        class="items-center justify-between hidden w-full md:flex md:w-auto md:order-1"
+        id="navbar-sticky"
+      >
+        <ul
+          class="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700"
+        >
+          <li>
+            <a
+              href="/"
+              class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500"
+              aria-current="page">Home</a
+            >
+          </li>
+          <li>
+            <a
+              href="/#features"
+              class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+              >Features</a
+            >
+          </li>
+          <li>
+            <a
+              href="/#pricing"
+              class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+              >Pricing</a
+            >
+          </li>
+          <li>
+            <a
+              href="/#contact"
+              class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+              >Contact</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <br />
+  <br />
+  <br />
+  <br />
+  <section class="bg-gray-50 dark:bg-gray-900">
+    <div
+      class="max-w-screen-xl px-4 py-8 mx-auto lg:grid lg:gap-20 lg:py-16 lg:grid-cols-12"
+    >
+      <div
+        class="flex-col justify-between hidden col-span-6 mr-auto lg:flex xl:mb-0"
+      >
+        <div>
+          <div class="flex">
+            <svg
+              class="w-5 h-5 mr-2 text-primary-600 shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd"></path>
+            </svg>
+            <div>
+              <h3
+                class="mb-2 text-xl font-bold leading-none text-gray-900 dark:text-white"
+              >
+                Get started quickly
+              </h3>
+              <p class="mb-2 font-light text-gray-500 dark:text-gray-400">
+                Integrate with developer-friendly APIs or choose low-code.
+              </p>
+            </div>
+          </div>
+          <div class="flex pt-8">
+            <svg
+              class="w-5 h-5 mr-2 text-primary-600 shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd"></path>
+            </svg>
+            <div>
+              <h3
+                class="mb-2 text-xl font-bold leading-none text-gray-900 dark:text-white"
+              >
+                Support any business model
+              </h3>
+              <p class="mb-2 font-light text-gray-500 dark:text-gray-400">
+                Host code that you don't want to share with the world in
+                private.
+              </p>
+            </div>
+          </div>
+          <div class="flex pt-8">
+            <svg
+              class="w-5 h-5 mr-2 text-primary-600 shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd"></path>
+            </svg>
+            <div>
+              <h3
+                class="mb-2 text-xl font-bold leading-none text-gray-900 dark:text-white"
+              >
+                Join millions of businesses
+              </h3>
+              <p class="mb-2 font-light text-gray-500 dark:text-gray-400">
+                Flowbite is trusted by ambitious startups and enterprises of
+                every size.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="w-full col-span-6 mx-auto bg-gray-900 rounded-lg shadow dark:bg-gray-800 md:mt-0 sm:max-w-lg xl:p-0"
+      >
+        <div class="p-6 space-y-4 lg:space-y-6 sm:p-8">
+          <h1
+            class="text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl dark:text-white"
+          >
+            Welcome back
+          </h1>
+          <!-- TODO -->
+          <!-- <Banner /> -->
+          <form
+            id="loginForm"
+            action="/auth/login"
+            class="space-y-4 lg:space-y-6"
+          >
+            <div>
+              <label
+                for="email"
+                class="block mb-2 text-sm font-medium text-white dark:text-white"
+                >Email</label
+              >
+              <input
+                type="email"
+                name="email"
+                id="email"
+                class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                placeholder="Enter your email"
+                required=""
+              />
+            </div>
+
+            <button
+              type="submit"
+              class="w-full text-gray-900 bg-white hover:bg-gray-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+              >Sign in to your account</button
+            >
+            <p class="text-sm font-light text-gray-500 dark:text-gray-400">
+              Don’t have an account yet? <a
+                href="/signup"
+                class="font-medium text-white hover:underline dark:text-blue-500"
+                >Sign up here</a
+              >
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+  <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700" />
+
+  <footer class="bg-white dark:bg-gray-900">
+    <div class="mx-auto w-full max-w-screen-xl p-4 py-6 lg:py-8">
+      <div class="md:flex md:justify-between">
+        <div class="mb-6 md:mb-0">
+          <a href="https://resumed.events/" class="flex items-center">
+            <img
+              src=`${NETWORKING_CONFIG.CDN}/assets/images/logo.png`
+              class="h-24 mr-3"
+              alt="Resumed Logo"
+            />
+          </a>
+        </div>
+        <div class="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
+          <div>
+            <h2
+              class="mb-6 text-sm font-semibold text-gray-900 uppercase dark:text-white"
+            >
+              Resources
+            </h2>
+            <ul class="text-gray-500 dark:text-gray-400 font-medium">
+              <li class="mb-4">
+                <a href="/help" class="hover:underline">Help Center</a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h2
+              class="mb-6 text-sm font-semibold text-gray-900 uppercase dark:text-white"
+            >
+              Follow us
+            </h2>
+            <ul class="text-gray-500 dark:text-gray-400 font-medium">
+              <li class="mb-4">
+                <a
+                  href="https://linkedin.com/in/resumed"
+                  class="hover:underline">LinkedIn</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h2
+              class="mb-6 text-sm font-semibold text-gray-900 uppercase dark:text-white"
+            >
+              Legal
+            </h2>
+            <ul class="text-gray-500 dark:text-gray-400 font-medium">
+              <li class="mb-4">
+                <a href="/terms" class="hover:underline">Privacy Policy</a>
+              </li>
+              <li>
+                <a href="/privacy" class="hover:underline"
+                  >Terms &amp; Conditions</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <hr
+        class="my-6 border-gray-200 sm:mx-auto dark:border-gray-700 lg:my-8"
+      />
+      <div class="sm:flex sm:items-center sm:justify-between">
+        <span class="text-sm text-gray-500 sm:text-center dark:text-gray-400"
+          >© 2023 <a href="https://resumed.events/" class="hover:underline"
+            >Resumed™</a
+          >. All Rights Reserved.
+        </span>
+      </div>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+  const loginForm = document.querySelector("#loginForm") as HTMLFormElement;
+
+  if (!loginForm) {
+    throw new Error("no login form???");
+  }
+
+  loginForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(loginForm);
+    console.log("sending login form data: ", formData);
+
+    fetch(loginForm.action, {
+      method: "POST",
+      body: formData,
+    })
+      .then((resp) => resp.json())
+      .then((json) => {
+        // TODO update banner somehow
+        console.log("login response", json);
+        if (json.sucess) {
+        } else if (json.duplicate) {
+        }
+      });
+  });
+
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get("error");
+  const success = params.get("success");
+  // banner
+  if (success) {
+  }
+  if (error) {
+    switch (error) {
+      case "invalid":
+      case "exists":
+        break;
+      case "no-code":
+      case "no-session":
+        break;
+      default:
+      case "no-session":
+        break;
+    }
+  }
+  // set interal to check if user has logged in
+
+  // check for cookie and redirect if exists
+
+  //   addEventListener("storage", (event) => {
+  //     console.log(event);
+  //   });
+
+  //   onstorage = (event) => {
+  //     console.log(event);
+  //   };
+</script>

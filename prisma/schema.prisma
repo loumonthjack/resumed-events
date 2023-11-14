@@ -20,41 +20,43 @@ model Session {
 }
 
 model User {
-  id               String             @id @default(uuid())
-  email            String             @unique
-  firstName        String
-  lastName         String
-  terms            Boolean            @default(false)
-  profilePicture   String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime?          @updatedAt
-  Events           Event[]
-  Session          Session[]
-  SubscriptionType SubscriptionType[]
-  Subscription     Subscription[]
+  id             String          @id @default(uuid())
+  email          String          @unique
+  firstName      String
+  lastName       String
+  terms          Boolean         @default(false)
+  profilePicture String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime?       @updatedAt
+  isFirstTime    Boolean         @default(true)
+  isActive       Boolean         @default(false)
+  isVerified     Boolean         @default(false)
+  Events         Event[]
+  Session        Session[]
+  Subscription   Subscription[]
+  Configuration  Configuration[]
+  Alerts         Alerts[]
 }
 
 model Event {
-  id                  String                @id @unique
-  name                String
-  organizers          String[]              @default([])
-  User                User                  @relation(fields: [userId], references: [id])
-  userId              String
-  logo                String?
-  startDate           DateTime?
-  endDate             DateTime?
-  createdAt           DateTime              @default(now())
-  description         String?
-  terms               Boolean               @default(false)
-  isArchived          Boolean               @default(false)
-  externalId          String?               @unique
-  tempKey             String?               @unique
-  theme               Theme?                @default(LIGHT)
-  isPaid              Boolean               @default(false)
-  EventAttendant      EventAttendant[]
-  EventConfigurations EventConfigurations[]
-  AttendeeNotify      AttendeeNotify[]
-  Configuration       Configuration[]
+  id                     String               @id @unique
+  name                   String
+  organizers             String[]             @default([])
+  User                   User                 @relation(fields: [userId], references: [id])
+  userId                 String
+  logo                   String?
+  portalBackgroundImage  String?
+  landingBackgroundImage String?
+  startDate              DateTime?
+  endDate                DateTime?
+  createdAt              DateTime             @default(now())
+  description            String?
+  isArchived             Boolean              @default(false)
+  externalId             String?              @unique
+  theme                  Theme?               @default(LIGHT)
+  EventAttendant         EventAttendant[]
+  EventConfiguration     EventConfiguration[]
+  AttendeeNotify         AttendeeNotify[]
 }
 
 enum SupportPriorityEnum {
@@ -62,17 +64,6 @@ enum SupportPriorityEnum {
   zendesk
   chat
   manager
-}
-
-model EventConfigurations {
-  id                  String                @id @default(uuid())
-  attendeesLimit      Int
-  maxDays             Int
-  supportType         SupportPriorityEnum[]
-  hasAttendeeBranding Boolean               @default(false)
-  hasEventBranding    Boolean               @default(false)
-  event               Event                 @relation(fields: [eventId], references: [id])
-  eventId             String                @unique
 }
 
 enum SubscriptionTypeEnum {
@@ -100,8 +91,6 @@ model SubscriptionType {
   createdAt    DateTime               @default(now())
   updatedAt    DateTime?              @updatedAt
   Subscription Subscription[]
-  User         User?                  @relation(fields: [userId], references: [id])
-  userId       String?
 }
 
 model Subscription {
@@ -110,9 +99,10 @@ model Subscription {
   SubscriptionType   SubscriptionType       @relation(fields: [subscriptionTypeId], references: [id])
   subscriptionTypeId String
   createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
+  updatedAt          DateTime?              @updatedAt
   User               User                   @relation(fields: [userId], references: [id])
   userId             String
+  externalId         String                @unique
 }
 
 enum Theme {
@@ -138,26 +128,46 @@ model AttendeeNotify {
   createdAt DateTime @default(now())
 }
 
-enum AttendeeData {
-  firstName
-  lastName
-  email
-  company
-  jobTitle
-  location
-  website
-  custom
-  linkedin
+model EventConfiguration {
+  id                      String    @id @default(uuid())
+  event                   Event     @relation(fields: [eventId], references: [id])
+  eventId                 String    @unique
+  attendeeData            String[]
+  showSlideControls       Boolean   @default(false)
+  showAttendeeLeaderboard Boolean   @default(false)
+  setLimit                Int?      @default(250)
+  enableEarlyAccess       Boolean   @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime? @updatedAt
 }
 
 model Configuration {
-  id                  String    @id @default(uuid())
-  event               Event     @relation(fields: [eventId], references: [id])
-  eventId             String    @unique
-  attendeeData        String[]
-  showSlideControls   Boolean   @default(false)
-  showAttendeeDetails Boolean   @default(false)
-  enableEarlyAccess   Boolean   @default(false)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime? @updatedAt
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id])
+  allowEventStartEmail  Boolean   @default(true)
+  allowEventEndEmail    Boolean   @default(true)
+  allowPromotionalEmail Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime? @updatedAt
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  title     String
+  body      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  Alerts    Alerts[]
+}
+
+model Alerts {
+  id             String       @id @default(uuid())
+  userId         String
+  User           User         @relation(fields: [userId], references: [id])
+  notificationId String
+  Notification   Notification @relation(fields: [notificationId], references: [id])
+  hasRead        Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime?    @updatedAt
 }
