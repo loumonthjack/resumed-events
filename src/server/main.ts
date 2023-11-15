@@ -55,7 +55,7 @@ app.use(router);
 // TODO error handler
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   console.log(error);
-  return res.redirect("error");
+  return res.redirect("/error");
 }
 
 app.use(errorHandler);
