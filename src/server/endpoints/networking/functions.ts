@@ -9,9 +9,10 @@ import Messenger from "../../services/mailer";
 import { uploadEventLogo, uploadProfilePicture } from "../../services/uploader";
 import { capitalizeEventName, removeDuplicates } from "../../../helper";
 import multer from "multer";
-import { createId as cuid } from "@paralleldrive/cuid2";
 import QRCode from "../../services/generator";
 import { SERVER_URL, STRIPE_MANAGE_LINK } from "../../constants";
+
+import { createId as cuid } from "@paralleldrive/cuid2";
 
 import { stripe } from "../../main";
 

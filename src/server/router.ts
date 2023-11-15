@@ -1,4 +1,8 @@
-import express from "express";
+import express, {
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import multer from "multer";
 import cookieParser from "cookie-parser";
 
@@ -44,15 +48,9 @@ router.use(auth.sessionLoader());
 export default router;
 
 // middleware functions
-function redirect(
-  route: string,
-  predicate?: (req: express.Request) => boolean
-) {
-  return function (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ) {
+
+function redirect(route: string, predicate?: (req: Request) => boolean) {
+  return function (req: Request, res: Response, next: NextFunction) {
     if (!predicate || predicate(req)) {
       return res.redirect(route);
     }

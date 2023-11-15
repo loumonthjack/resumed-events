@@ -1,4 +1,4 @@
-import express from "express";
+import express, { ErrorRequestHandler } from "express";
 import cors from "cors";
 import Stripe from "stripe";
 
@@ -29,7 +29,7 @@ app.use(
 // TODO explain
 app.set("trust proxy", 1);
 
-// TODO explain
+// TODO use helmet https/cors
 // if (NODE_ENV === "production") app.use(sslRedirect());
 if (NODE_ENV === "production") {
   app.use(
@@ -53,18 +53,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(router);
 
 // TODO error handler
-// app.use(errorHandler);
+const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
+  console.log(error);
+  return res.redirect("error");
+}
+
+app.use(errorHandler);
 
 const server = app.listen(env.PORT, () =>
   console.log(`Server listening running ${FULL_SERVER_URL}`)
-);
-
-console.log(`[server] address: ${JSON.stringify(server.address())}`);
-
-server.on("connection", (socket) =>
-  console.log(`[server] connection: ${JSON.stringify(socket.address())}`)
-);
-server.on("error", (err) => console.log(`[server] error: ${err}`));
-server.on("dropRequest", (req, socket) =>
-  console.log(`[server] req: ${JSON.stringify(req)}}`)
 );

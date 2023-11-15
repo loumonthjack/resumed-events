@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type Request, Response, NextFunction } from "express";
 import db, { prisma } from "./database";
 import mailer from "./mailer";
 
@@ -8,7 +8,7 @@ import { determineStripePaymentPage } from "../endpoints/networking/functions";
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000;
 
 function loginHandler() {
-  return async (req: express.Request, res: express.Response) => {
+  return async (req: Request, res: Response) => {
     const { email } = req.body;
     // TODO validate incoming login data (email)
 
@@ -41,7 +41,7 @@ function loginHandler() {
 
 // TODO debug verifyHandler
 function verifyHandler() {
-  return async (req: express.Request, res: express.Response) => {
+  return async (req: Request, res: Response) => {
     console.log("verify handler");
     // TODO validate
     const { code, redirectTo, verified } = req.query;
@@ -96,7 +96,8 @@ function verifyHandler() {
         return res.redirect(getLink);
       }
 
-      return res.redirect;
+      console.log("why redirect here???");
+      return res.redirect('/');
     }
 
     const userSubscription = await prisma.subscription.findMany({
@@ -114,16 +115,16 @@ function verifyHandler() {
       });
     }
 
-    console.log('dashboard redirect');
-    return res.redirect(`/dashboard`);
+    console.log("/ redirect");
+    return res.redirect('/');
   };
 }
 
 function sessionLoader() {
   return async function (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
+    req: Request,
+    res: Response,
+    next: NextFunction
   ) {
     const sessionCookie = req.cookies["resumed-session"];
 

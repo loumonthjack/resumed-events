@@ -37,8 +37,6 @@ const zEnvVar = z.object({
   // does test version need to exist?
   STRIPE_WEBHOOK_KEY: z.string(),
   STRIPE_SECRET_KEY: z.string(),
-  STRIPE_WEBHOOK_KEY_TEST: z.string(),
-  STRIPE_SECRET_KEY_TEST: z.string(),
 });
 
 // throws if invalid
@@ -62,14 +60,8 @@ export const AWS_BUCKET_NAME: string =
   env.AWS_BUCKET_NAME || `resumed-events-${getNodeEnvShort()}`;
 
 // Stripe webhook and secret keys
-export const STRIPE_WEBHOOK_KEY: string =
-  NODE_ENV === "production"
-    ? env.STRIPE_WEBHOOK_KEY
-    : env.STRIPE_WEBHOOK_KEY_TEST;
-export const STRIPE_SECRET_KEY: string =
-  NODE_ENV === "production"
-    ? env.STRIPE_SECRET_KEY
-    : env.STRIPE_SECRET_KEY_TEST;
+export const STRIPE_WEBHOOK_KEY: string = env.STRIPE_WEBHOOK_KEY;
+export const STRIPE_SECRET_KEY: string = env.STRIPE_SECRET_KEY;
 
 // TODO get paths from central location
 export const TEMPLATE_PATH = path.join(process.cwd(), "src/templates");
