@@ -4,10 +4,7 @@
   "description": "create dynamic qr slideshow for attendees",
   "main": "index.js",
   "scripts": {
-    "new:dev": "nodemon -r dotenv/config ./src/server/main.ts && astro dev",
-    "new:dry": "tsc --noEmit",
-    "new:build_list": "tsc --listFiles --noEmit",
-    "start:dev": "nodemon -r dotenv/config ./src/server/main.ts --files ./src/@types/index.d.ts",
+    "start:dev": "astro dev",
     "start:dev:webhook": "nodemon -r dotenv/config ./src/servers/webhook.ts",
     "start:dev:worker": "nodemon -r dotenv/config ./src/servers/worker.ts",
     "start:webhook": "ts-node src/servers/webhook.ts",

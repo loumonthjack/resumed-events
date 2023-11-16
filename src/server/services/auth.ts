@@ -12,6 +12,7 @@ function loginHandler() {
     const { email } = req.body;
     // TODO validate incoming login data (email)
 
+
     const user = await prisma.user.findUniqueOrThrow({
       where: {
         email: email.toLowerCase(),

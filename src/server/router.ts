@@ -18,33 +18,28 @@ const multerUpload = multer();
 router.use(cookieParser());
 router.use(auth.sessionLoader());
 
+/* AUTHENTICATION ROUTES */
 // NOTE moved auth routes behind /auth/* so GET reqs dont accidentally conflict w/ astro
-/* authentication */ {
-  router.post(
-    "/auth/login",
-    redirect("/dashboard", (req) => Boolean(req.session)),
-    multerUpload.none(),
-    auth.loginHandler()
-  );
+router.post(
+  "/auth/login",
+  redirect("/dashboard", (req) => Boolean(req.session)),
+  multerUpload.none(),
+  auth.loginHandler()
+);
 
-  router.get("/auth/verify", auth.verifyHandler());
-}
+router.get("/auth/verify", auth.verifyHandler());
 
-/* networking */ {
-  // router.use(networkingRoute);
-}
+/* NETWORKING ROUTES */
+// router.use(networkingRoute);
 
-/* website */ {
-  // astro static pages
-  router.use(express.static(ASTRO_CLIENT_DIST_PATH));
+/* STATIC ROUTES */
+router.use(express.static(ASTRO_CLIENT_DIST_PATH));
 
-  // TODO astro ssr
-  // router.use((req, res, next) => {
-  //   const locals = {};
-  //   astroServer.handler(req, res, next, locals);
-  // });
-}
-
+// TODO astro ssr
+// router.use((req, res, next) => {
+//   const locals = {};
+//   astroServer.handler(req, res, next, locals);
+// });
 
 export default router;
 
