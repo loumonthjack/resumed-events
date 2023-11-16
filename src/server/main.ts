@@ -56,10 +56,14 @@ app.use(router);
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   console.log(error);
   return res.redirect("/error");
-}
+};
 
 app.use(errorHandler);
 
-const server = app.listen(env.PORT, () =>
-  console.log(`Server listening running ${FULL_SERVER_URL}`)
-);
+if (NODE_ENV === "production") {
+  const server = app.listen(env.PORT, () =>
+    console.log(`Server listening running ${FULL_SERVER_URL}`)
+  );
+}
+
+export const expressServer = app;
