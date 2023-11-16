@@ -60,9 +60,7 @@ function verifyHandler() {
       return res.redirect("/login?error=no-session");
     }
 
-    // TODO cannot redirect if response has be modified ie 👇
-    // NOTE pretty sure this is just broken
-    // res.cookie("resumed-session", session.id, { maxAge: SESSION_MAX_AGE });
+    res.cookie("resumed-session", session.id, { maxAge: SESSION_MAX_AGE });
 
     // not sure what this for
     if (verified) {
@@ -99,7 +97,7 @@ function verifyHandler() {
       }
 
       console.log("why redirect here???");
-      return res.redirect('/');
+      return res.redirect("/");
     }
 
     const userSubscription = await prisma.subscription.findMany({
@@ -117,16 +115,12 @@ function verifyHandler() {
       });
     }
 
-    res.redirect(302, "/dashboard");
+    return res.redirect("/dashboard");
   };
 }
 
 function sessionLoader() {
-  return async function (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) {
+  return async function (req: Request, res: Response, next: NextFunction) {
     const sessionCookie = req.cookies["resumed-session"];
 
     if (!Boolean(sessionCookie)) {
@@ -144,8 +138,8 @@ function sessionLoader() {
     }
 
     // TODO session validation
-
     req.session = session;
+    return next();
   };
 }
 

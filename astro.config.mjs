@@ -3,6 +3,9 @@ import node from '@astrojs/node';
 
 import viteExpressDevPlugin from "./dev/vite-express-dev-plugin";
 
+// NOTE this feels dangerous
+import { env } from "./src/server/constants";
+
 export default defineConfig({
   output: 'hybrid',
   adapter: node({
@@ -18,4 +21,7 @@ export default defineConfig({
       noExternal: ['path-to-regexp'],
     },
   },
+  server: {
+    port: env.PORT
+  }
 });

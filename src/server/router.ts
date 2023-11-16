@@ -18,17 +18,6 @@ const multerUpload = multer();
 router.use(cookieParser());
 router.use(auth.sessionLoader());
 
-/* website */ {
-  // astro static pages
-  router.use(express.static(ASTRO_CLIENT_DIST_PATH));
-
-  // TODO astro ssr
-  // router.use((req, res, next) => {
-  //   const locals = {};
-  //   astroServer.handler(req, res, next, locals);
-  // });
-}
-
 // NOTE moved auth routes behind /auth/* so GET reqs dont accidentally conflict w/ astro
 /* authentication */ {
   router.post(
@@ -44,6 +33,18 @@ router.use(auth.sessionLoader());
 /* networking */ {
   // router.use(networkingRoute);
 }
+
+/* website */ {
+  // astro static pages
+  router.use(express.static(ASTRO_CLIENT_DIST_PATH));
+
+  // TODO astro ssr
+  // router.use((req, res, next) => {
+  //   const locals = {};
+  //   astroServer.handler(req, res, next, locals);
+  // });
+}
+
 
 export default router;
 

@@ -6,6 +6,7 @@ export default function viteExpressDevPlugin(path: string) {
     throw new Error("no path defined in plugin, check your config `viteExpressDevPlugin(\"src/string\")`");
   }
 
+  // TODO add support for astro build
   return {
     name: "vite-express-plugin",
     configureServer: async (server: ViteDevServer) => {
