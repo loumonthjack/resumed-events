@@ -17,6 +17,7 @@ export default function viteExpressDevPlugin(path: string) {
         //   command: "serve",
         //   mode: "development",
         // });
+        console.log("vite-express-dev-plugin", path)
         
         process.env["VITE"] = "true";
         

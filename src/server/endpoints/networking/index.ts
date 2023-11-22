@@ -3,7 +3,7 @@
 import { Request, Response, Router } from "express";
 import prisma from "../../services/database";
 import { uploadEventLogo } from "../../services/uploader";
-import { capitalizeEventName, removeDuplicates } from "../../../helper";
+import { capitalizeName, removeDuplicates } from "../../../helper";
 import {
   $sendOnboardingTemplate,
   upload,
@@ -76,7 +76,7 @@ eventRouter.get(
     const eventAddCode = renderTemplate("eventUserOnboarding", {
       event: {
         ...eventInfo,
-        displayName: capitalizeEventName(eventInfo.name),
+        displayName: capitalizeName(eventInfo.name),
       },
       configuration: {
         fullName: config?.attendeeData.includes("fullName"),
@@ -119,9 +119,9 @@ eventRouter.post(
     if (
       eventDuration <= 2 &&
       eventAttendants.length >=
-        [MAX_ONE_DAY_ATTENDEES, MAX_TWO_DAY_ATTENDEES, MAX_THREE_DAY_ATTENDEES][
-          eventDuration
-        ]
+      [MAX_ONE_DAY_ATTENDEES, MAX_TWO_DAY_ATTENDEES, MAX_THREE_DAY_ATTENDEES][
+      eventDuration
+      ]
     ) {
       return redirectOnError(res, req.params.eventId, "limit");
     }
@@ -156,8 +156,8 @@ eventRouter.post(
     );
     const createCode = await QRCode.create({
       url: createShortLink.shortURL,
-      title: capitalizeEventName(activeEvent.name) + " - " + name,
-      name: capitalizeEventName(name),
+      title: capitalizeName(activeEvent.name) + " - " + name,
+      name: capitalizeName(name),
     });
     const data = {
       fullName: name,
@@ -220,7 +220,7 @@ eventRouter.get(
     const eventAddCode = renderTemplate("eventUserCode", {
       event: {
         ...eventInfo,
-        displayName: capitalizeEventName(eventInfo.name),
+        displayName: capitalizeName(eventInfo.name),
       },
       source: code.png,
       data: attendant.data,

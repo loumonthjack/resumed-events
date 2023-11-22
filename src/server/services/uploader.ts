@@ -11,6 +11,10 @@ export const uploadProfilePicture = async (
     type: string,
     userId: string
 ) => {
+    if (!(file instanceof Buffer) || !(typeof file === 'string')) {
+        return;
+    }
+    console.log('uploading profile picture', file, type, userId)
     const params = {
         Bucket: AWS_BUCKET_NAME,
         Key: `profile_pictures/${userId}.${type.split('/')[1]}`,

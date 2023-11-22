@@ -1,32 +1,186 @@
 import express, { type Request, Response, NextFunction } from "express";
 import db, { prisma } from "./database";
 import mailer from "./mailer";
-
+import sendgridClient from '@sendgrid/client';
+import { EventWebhook } from '@sendgrid/eventwebhook';
 import { checkSubscription } from "./payment";
-import { determineStripePaymentPage } from "../endpoints/networking/functions";
+import { determineStripePaymentPage, handleProfilePictureUpload } from "../endpoints/networking/functions";
+import { EmailStatus, InviteStatus, RoleType, SubscriptionTypeEnum } from "@prisma/client";
+import { getCookieName, setCookies } from "../middleware";
+import { SENDGRID_WEBHOOK_KEY, env } from "../constants";
 
-const SESSION_MAX_AGE = 24 * 60 * 60 * 1000;
+function signupHandler() {
+  return async (req: Request, res: Response) => {
+    const { email, firstName, lastName, terms, profilePicture, invitationId, companyName, redirectTo } = req.body;
+    // TODO validate incoming register data (email, firstName, lastName)
+    if (!email || !firstName || !lastName || !terms) {
+      return res.sendStatus(400);
+    }
+    if (profilePicture === undefined) {
+      delete req.body.profilePicture;
+    }
+    const user = await prisma.user.findUnique({
+      where: {
+        email: email.toLowerCase(),
+      },
+    });
 
+    if (user) {
+      return res.send({ duplicate: true });
+    }
+    if (!invitationId) {
+      const newUser = await db.create.adminUser({
+        companyName: companyName.toLowerCase().trim(),
+        email: email.toLowerCase().trim(),
+        firstName: firstName.toLowerCase().trim(),
+        lastName: lastName.toLowerCase().trim(),
+        profilePicture: null,
+        terms: terms === "yes",
+        isFirstTime: true,
+        isVerified: false,
+      });
+      if (req.body.profilePicture) {
+        await handleProfilePictureUpload(profilePicture, newUser.id);
+      }
+      const userRole = await prisma.userRole.findFirst({
+        where: {
+          userId: newUser.id,
+          Role: {
+            name: RoleType.ADMINISTRATOR,
+          },
+        },
+      });
+      if (!userRole) {
+        throw new Error("Failed to create user role");
+      }
+      const sessionCode = await db.create.session(userRole.id);
+      await mailer.sendLoginEmail(email, {
+        code: sessionCode.toString(),
+        name: `${firstName} ${lastName}`,
+        subject: "Resumed Events - Verify your email address",
+        verification: true,
+        redirectTo: redirectTo || '/dashboard?firstTime=true',
+      });
+
+      return res.send({ success: true });
+    } else {
+      const userId = await db.create.invitedUser({
+        email: email.toLowerCase().trim(),
+        firstName: firstName.toLowerCase().trim(),
+        lastName: lastName.toLowerCase().trim(),
+        profilePicture: null,
+        terms: terms === "yes",
+        isFirstTime: true,
+        isVerified: false,
+      }, invitationId);
+      if (!userId) {
+        throw new Error("Failed to create user");
+      }
+      if (!(req.body.profilePicture === 'undefined')) {
+        await handleProfilePictureUpload(profilePicture, userId);
+      }
+      const invitation = await prisma.invite.findUnique({
+        where: {
+          id: invitationId,
+        },
+      });
+      if (!invitation) {
+        throw new Error("Failed to find invitation");
+      }
+      const userRole = await prisma.userRole.findFirst({
+        where: {
+          userId: userId,
+          Role: {
+            name: invitation.role,
+          },
+          eventId: invitation.eventId,
+          accountId: invitation.accountId,
+        },
+      });
+      if (!userRole) {
+        throw new Error("Failed to create user role");
+      }
+      const sessionCode = await db.create.session(userRole.id);
+      await mailer.sendLoginEmail(email, {
+        code: sessionCode.toString(),
+        name: `${firstName} ${lastName}`,
+        subject: "Resumed Events - Verify your email address",
+        verification: true,
+        redirectTo: redirectTo || '/dashboard?firstTime=true',
+      });
+
+      return res.send({ success: true });
+    }
+
+  };
+}
+
+function logoutHandler() {
+  return async (req: Request, res: Response) => {
+    const sessionCookie = req.cookies[getCookieName()];
+
+    if (!Boolean(sessionCookie)) {
+      return res.sendStatus(400);
+    }
+
+    await prisma.session.delete({
+      where: {
+        id: sessionCookie,
+      },
+    });
+
+    return res.sendStatus(200);
+  };
+}
 function loginHandler() {
   return async (req: Request, res: Response) => {
-    const { email } = req.body;
+    const { email, invitationId } = req.body;
     // TODO validate incoming login data (email)
-
 
     const user = await prisma.user.findUniqueOrThrow({
       where: {
         email: email.toLowerCase(),
       },
     });
-
-    const session = await prisma.session.findFirst({
+    const userRole = await prisma.userRole.findFirst({
       where: {
         userId: user.id,
+        isDefault: true,
+      },
+    });
+    if (!userRole) {
+      throw new Error("Failed to find user role");
+    }
+    if (invitationId) {
+      await db.update.inviteStatus(invitationId, InviteStatus.ACCEPTED);
+      const invite = await prisma.invite.findUnique({
+        where: {
+          id: invitationId,
+        },
+      });
+      if (!invite) {
+        throw new Error("Failed to find invitation");
+      }
+      const role = await prisma.role.findUnique({
+        where: {
+          name: invite.role,
+        },
+      });
+      if (!role) {
+        throw new Error("Failed to find role");
+      }
+      await db.create.userRole(user.id, role.id, invite.accountId, invite.eventId || undefined);
+    }
+    const session = await prisma.session.findFirst({
+      where: {
+        UserRole: {
+          userId: user.id,
+        },
       },
     });
 
     if (session === null) {
-      const sessionCode = await db.createSession(user.id);
+      const sessionCode = await db.create.session(userRole.id);
 
       await mailer.sendLoginEmail(email, {
         code: sessionCode.toString(),
@@ -43,9 +197,8 @@ function loginHandler() {
 // TODO debug verifyHandler
 function verifyHandler() {
   return async (req: Request, res: Response) => {
-    console.log("verify handler");
     // TODO validate
-    const { code, redirectTo, verified } = req.query;
+    const { code, redirectTo, verified, firstTime } = req.query;
 
     if (!code) {
       return res.redirect("/login?error=no-code");
@@ -60,14 +213,27 @@ function verifyHandler() {
     if (!session) {
       return res.redirect("/login?error=no-session");
     }
-
-    res.cookie("resumed-session", session.id, { maxAge: SESSION_MAX_AGE });
-
+    await prisma.session.update({
+      where: {
+        id: session.id,
+      },
+      data: {
+        isVerified: true,
+      },
+    });
+    const userRole = await prisma.userRole.findUnique({
+      where: {
+        id: session.userRoleId,
+      },
+    });
+    if (!userRole) {
+      throw new Error("Failed to find user role");
+    }
     // not sure what this for
     if (verified) {
       await prisma.user.update({
         where: {
-          id: session.userId,
+          id: userRole.userId,
         },
         data: {
           isVerified: true,
@@ -79,7 +245,7 @@ function verifyHandler() {
     if (redirectTo) {
       const user = await prisma.user.findUnique({
         where: {
-          id: session.userId,
+          id: userRole.userId,
         },
       });
 
@@ -87,42 +253,43 @@ function verifyHandler() {
         // WARN UR_1 - should be unreachable
         throw Error("[auth] UR_1: valid session but user undefined...");
       }
+      const paymentRedirect = [SubscriptionTypeEnum.BASIC, SubscriptionTypeEnum.PRO, SubscriptionTypeEnum.FREE, SubscriptionTypeEnum.CUSTOM]
+      if (paymentRedirect.includes(redirectTo.toString().toUpperCase() as SubscriptionTypeEnum)) {
+        const getLink = await determineStripePaymentPage(
+          redirectTo.toString().toUpperCase(),
+          user.email
+        );
 
-      const getLink = await determineStripePaymentPage(
-        redirectTo.toString().toUpperCase(),
-        user.email
-      );
-
-      if (getLink) {
-        return res.redirect(getLink);
+        if (getLink) {
+          return res.redirect(getLink);
+        }
       }
-
-      console.log("why redirect here???");
-      return res.redirect("/");
+      setCookies(res, session.id);
+      return res.redirect(redirectTo.toString());
     }
 
-    const userSubscription = await prisma.subscription.findMany({
+    const accountSubscription = await prisma.subscription.findMany({
       where: {
-        userId: session.userId,
+        accountId: userRole.accountId,
       },
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    if (userSubscription.length > 0) {
-      userSubscription.forEach(async (subscription) => {
+    if (accountSubscription.length > 0) {
+      accountSubscription.forEach(async (subscription) => {
         await checkSubscription(subscription.externalId);
       });
     }
-
+    setCookies(res, session.id);
     return res.redirect("/dashboard");
   };
 }
 
 function sessionLoader() {
   return async function (req: Request, res: Response, next: NextFunction) {
-    const sessionCookie = req.cookies["resumed-session"];
+    const sessionCookie = req.cookies[getCookieName()];
 
     if (!Boolean(sessionCookie)) {
       return next();
@@ -143,9 +310,115 @@ function sessionLoader() {
     return next();
   };
 }
+function inviteHandler() {
+  return async function (req: Request, res: Response) {
+    const { id } = req.query;
+    if (!id) {
+      return res.sendStatus(400);
+    }
+    const invite = await prisma.invite.findUnique({
+      where: {
+        id: id.toString(),
+      },
+      include: {
+        Account: true,
+      },
+    });
+    const user = await prisma.user.findUnique({
+      where: {
+        email: invite?.email,
+      },
+    });
+    return user ? res.redirect(`/login?invitationId=${id}&read_only=${invite?.email}`) : res.redirect(`/signup?invitationId=${id}&read_only=${invite?.email}`);
+  };
+}
+async function webhookHandler(req: Request, res: Response) {
+  const events = req.body;
+
+  for (const event of events) {
+    const sgMessageId = event.sg_message_id;
+    const eventType = event.event;
+    const email = event.email;
+    const attendeeInvite = await prisma.attendeeNotify.findUnique({
+      where: {
+        externalId: sgMessageId,
+      },
+    });
+    if (attendeeInvite) {
+      await prisma.attendeeNotify.update({
+        where: {
+          id: attendeeInvite.id,
+        },
+        data: {
+          externalId: sgMessageId,
+          emailStatus: eventType.toUpperCase(),
+        },
+      });
+    } else {
+      // get the email from the attendeeNotify table
+      const notify = await prisma.attendeeNotify.findFirst({
+        where: {
+          email: email,
+          externalId: null,
+        },
+      });
+      if (notify) {
+        await prisma.attendeeNotify.update({
+          where: {
+            id: notify.id,
+          },
+          data: {
+            externalId: sgMessageId,
+            emailStatus: eventType.toUpperCase(),
+          },
+        });
+      }
+    }
+    const adminInvite = await prisma.invite.findUnique({
+      where: {
+        externalId: sgMessageId,
+      },
+    });
+    if (adminInvite) {
+      await prisma.invite.update({
+        where: {
+          id: adminInvite.id,
+        },
+        data: {
+          externalId: sgMessageId,
+          emailStatus: eventType.toUpperCase(),
+        },
+      });
+    } else {
+      const invite = await prisma.invite.findFirst({
+        where: {
+          email: email,
+          externalId: null,
+        },
+      });
+      if (invite) {
+        await prisma.invite.update({
+          where: {
+            id: invite.id,
+          },
+          data: {
+            emailStatus: eventType.toUpperCase(),
+            externalId: sgMessageId,
+          },
+        });
+      }
+    }
+  }
+  return res.end('ok');
+}
+
 
 export default {
   loginHandler,
   sessionLoader,
   verifyHandler,
+  signupHandler,
+  logoutHandler,
+  inviteHandler,
+  webhookHandler,
 };

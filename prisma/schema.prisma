@@ -11,39 +11,131 @@ datasource db {
 }
 
 model Session {
-  id        String   @id @default(uuid())
-  code      Int      @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  User      User     @relation(fields: [userId], references: [id])
+  id         String   @id @default(uuid())
+  code       Int      @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isVerified Boolean  @default(false)
+  UserRole   UserRole @relation(fields: [userRoleId], references: [id])
+  userRoleId String
+}
+
+enum RoleType {
+  ADMINISTRATOR
+  COMPANY_AUDITOR
+  EVENT_AUDITOR
+  EVENT_MANAGER
+  COMPANY_MANAGER
+}
+
+enum Permissions {
+  company_read
+  company_write
+  event_read
+  event_write
+  company_billing
+  company_settings
+  company_users
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum EmailStatus {
+  DELIVERED
+  NOT_SENT
+  SENT
+  CLICK
+  OPEN
+  BOUNCE
+  UNSUBSCRIBE
+  PROCESSED
+  DEFERRED
+  DROPPED
+  SPAMREPORT
+  GROUP_UNSUBSCRIBE
+  GROUP_RESUBSCRIBE
+}
+
+model Invite {
+  id          String       @id @default(uuid())
+  firstName   String?
+  lastName    String?
+  email       String
+  emailStatus EmailStatus  @default(NOT_SENT)
+  externalId  String?      @unique
+  role        RoleType
+  status      InviteStatus
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  Event       Event?       @relation(fields: [eventId], references: [id])
+  eventId     String?
+  Account     Account      @relation(fields: [accountId], references: [id])
+  accountId   String
+}
+
+model Role {
+  id          String        @id @default(uuid())
+  name        RoleType      @unique
+  permissions Permissions[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime?     @updatedAt
+  UserRole    UserRole[]
+}
+
+model UserRole {
+  id        String    @id @default(uuid())
+  User      User      @relation(fields: [userId], references: [id])
   userId    String
+  isDefault Boolean   @default(false)
+  Role      Role      @relation(fields: [roleId], references: [id])
+  roleId    String
+  Event     Event?    @relation(fields: [eventId], references: [id])
+  eventId   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  Account   Account   @relation(fields: [accountId], references: [id])
+  accountId String
+  Session   Session[]
 }
 
 model User {
-  id             String          @id @default(uuid())
-  email          String          @unique
+  id             String     @id @default(uuid())
+  email          String     @unique
   firstName      String
   lastName       String
-  terms          Boolean         @default(false)
+  terms          Boolean    @default(false)
   profilePicture String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime?       @updatedAt
-  isFirstTime    Boolean         @default(true)
-  isActive       Boolean         @default(false)
-  isVerified     Boolean         @default(false)
-  Events         Event[]
-  Session        Session[]
-  Subscription   Subscription[]
-  Configuration  Configuration[]
-  Alerts         Alerts[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime?  @updatedAt
+  isFirstTime    Boolean    @default(true)
+  isVerified     Boolean    @default(false)
+  UserRole       UserRole[]
+  Account        Account[]
+  Alerts         Alert[]
+}
+
+model Account {
+  id            String         @id @default(uuid())
+  companyName   String?
+  isActive      Boolean        @default(false)
+  User          User           @relation(fields: [userId], references: [id])
+  userId        String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime?      @updatedAt
+  Events        Event[]
+  Subscription  Subscription[]
+  Invites       Invite[]
+  UserRoles     UserRole[]
+  Configuration Configuration?
 }
 
 model Event {
   id                     String               @id @unique
   name                   String
-  organizers             String[]             @default([])
-  User                   User                 @relation(fields: [userId], references: [id])
-  userId                 String
   logo                   String?
   portalBackgroundImage  String?
   landingBackgroundImage String?
@@ -54,9 +146,13 @@ model Event {
   isArchived             Boolean              @default(false)
   externalId             String?              @unique
   theme                  Theme?               @default(LIGHT)
-  EventAttendant         EventAttendant[]
+  EventAttendants        EventAttendant[]
   EventConfiguration     EventConfiguration[]
-  AttendeeNotify         AttendeeNotify[]
+  AttendeeInvites        AttendeeNotify[]
+  Account                Account              @relation(fields: [accountId], references: [id])
+  accountId              String
+  UserRoles              UserRole[]
+  Invites                Invite[]
 }
 
 enum SupportPriorityEnum {
@@ -100,9 +196,9 @@ model Subscription {
   subscriptionTypeId String
   createdAt          DateTime               @default(now())
   updatedAt          DateTime?              @updatedAt
-  User               User                   @relation(fields: [userId], references: [id])
-  userId             String
-  externalId         String                @unique
+  externalId         String                 @unique
+  Account            Account                @relation(fields: [accountId], references: [id])
+  accountId          String
 }
 
 enum Theme {
@@ -120,12 +216,14 @@ model EventAttendant {
 
 // for attendee that fill out email on coming soon page, notify them when event is live if event has started and paid
 model AttendeeNotify {
-  id        String   @id @default(uuid())
-  email     String
-  hasSent   Boolean  @default(false)
-  event     Event    @relation(fields: [eventId], references: [id])
-  eventId   String
-  createdAt DateTime @default(now())
+  id          String      @id @default(uuid())
+  email       String
+  hasSent     Boolean     @default(false)
+  emailStatus EmailStatus @default(NOT_SENT)
+  externalId  String?      @unique
+  event       Event       @relation(fields: [eventId], references: [id])
+  eventId     String
+  createdAt   DateTime    @default(now())
 }
 
 model EventConfiguration {
@@ -143,31 +241,32 @@ model EventConfiguration {
 
 model Configuration {
   id                    String    @id @default(uuid())
-  userId                String    @unique
-  user                  User      @relation(fields: [userId], references: [id])
   allowEventStartEmail  Boolean   @default(true)
   allowEventEndEmail    Boolean   @default(true)
   allowPromotionalEmail Boolean   @default(true)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime? @updatedAt
+  Account               Account   @relation(fields: [accountId], references: [id])
+  accountId             String    @unique
 }
 
 model Notification {
   id        String    @id @default(uuid())
   title     String
   body      String
+  link      String?
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
-  Alerts    Alerts[]
+  Alerts    Alert[]
 }
 
-model Alerts {
+model Alert {
   id             String       @id @default(uuid())
-  userId         String
-  User           User         @relation(fields: [userId], references: [id])
   notificationId String
   Notification   Notification @relation(fields: [notificationId], references: [id])
   hasRead        Boolean      @default(false)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime?    @updatedAt
+  User           User         @relation(fields: [userId], references: [id])
+  userId         String
 }

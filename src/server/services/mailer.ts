@@ -2,12 +2,10 @@ import sendGrid from "@sendgrid/mail";
 import { createId as cuid } from "@paralleldrive/cuid2";
 import { renderTemplate } from "../templates";
 import { FULL_SERVER_URL } from "../constants";
+import { capitalizeName, getRoleName, removeDuplicates } from "../../helper";
+import { Invite } from "@prisma/client";
 import { prisma } from "./database";
-import { capitalizeEventName, removeDuplicates } from "../../helper";
-import {
-  determineStripePaymentPage,
-  computeEventDuration,
-} from "../endpoints/networking/functions";
+import { eventNames } from "process";
 
 class Sendgrid {
   private client;
@@ -57,7 +55,7 @@ class Sendgrid {
     const template = renderTemplate("email/event-unpaid", {
       event: {
         ...data,
-        displayName: capitalizeEventName(data.name),
+        displayName: capitalizeName(data.name),
       },
       SERVER_URL: FULL_SERVER_URL,
     });
@@ -70,23 +68,26 @@ class Sendgrid {
     if (!success) throw new Error("Email could not be sent to" + to);
     return success;
   }
+
   async sendNotifyEmails(to: string, data: any) {
     const template = renderTemplate("email/event-notify", {
       event: {
         ...data,
-        displayName: capitalizeEventName(data.name),
+        displayName: capitalizeName(data.name),
       },
       SERVER_URL: FULL_SERVER_URL,
     });
     if (!template) throw new Error("Template could not be rendered");
     const success = this.sendEmail(
       to,
-      capitalizeEventName(data.name) + " social portal is now live!",
+      "Resumed Events: " + capitalizeName(data.name) + " social portal is now live!",
       template
     );
+    console.log(success);
     if (!success) throw new Error("Email could not be sent to" + to);
     return success;
   }
+
   async sendFeedbackEmails(to: string, data: any) {
     const template = renderTemplate("email/event-feedback", {
       event: data.event,
@@ -154,10 +155,9 @@ class Sendgrid {
       code: data.code,
       redirectTo: data.redirectTo,
       verified: data.verification,
-      firstName: capitalizeEventName(data.name),
-      loginUrl: `${FULL_SERVER_URL}/auth/verify?code=${data.code}${
-        data.redirectTo ? "&redirectTo=" + data.redirectTo : ""
-      }${data.verification ? "&verified=true" : ""}`,
+      firstName: capitalizeName(data.name),
+      loginUrl: `${FULL_SERVER_URL}/auth/verify?code=${data.code}${data.redirectTo ? "&redirectTo=" + data.redirectTo : ""
+        }${data.verification ? "&verified=true" : ""}`,
       SERVER_URL: FULL_SERVER_URL,
     });
     if (!template) throw new Error("Template could not be rendered");
@@ -180,18 +180,63 @@ class Sendgrid {
       };
     }
   ) {
-    // update event with code
-    const code = cuid();
 
     const template = renderTemplate("email/new-event-email", {
       event: data.event,
-      authKey: "23",
       SERVER_URL: FULL_SERVER_URL,
     });
     if (!template) throw new Error("Template could not be rendered");
     const success = this.sendEmail(
       to,
-      "Thank you for choosing Resumed Events",
+      `Resumed Events: ${capitalizeName(data.event.name)} is now live!`,
+      template
+    );
+    if (!success) throw new Error("Email could not be sent to" + to);
+    return success;
+  }
+  async sendInvitationEmail(
+    to: string,
+    data: {
+      invite: Omit<Invite, "id" | "updatedAt" | "createdAt" | "status" | "emailStatus" | "externalId">;
+      redirectTo?: string;
+    }
+  ) {
+    const account = await prisma.account.findUnique({
+      where: {
+        id: data.invite.accountId
+      }
+    });
+    const owner = await prisma.user.findUnique({
+      where: {
+        id: account?.userId
+      }
+    });
+    
+    if (!account) throw new Error("Account not found");
+    let eventName: string | undefined = undefined;
+    if (data.invite.eventId) {
+      const event = await prisma.event.findUnique({
+        where: {
+          id: data.invite.eventId
+        }
+      });
+      if (!event) throw new Error("Event not found");
+     eventName = event.name;
+    }
+    const template = renderTemplate("email/invitation", {
+      redirectTo: FULL_SERVER_URL+data.redirectTo,
+      email: data.invite.email,
+      role: getRoleName(data.invite.role),
+      companyName: capitalizeName(account?.companyName || `${owner?.firstName} ${owner?.lastName}`),
+      firstName: capitalizeName(data.invite.firstName || ""),
+      lastName: capitalizeName(data.invite.lastName || ""),
+      eventName: eventName ? capitalizeName(eventName) : undefined,
+      SERVER_URL: FULL_SERVER_URL,
+    });
+    if (!template) throw new Error("Template could not be rendered");
+    const success = this.sendEmail(
+      to,
+      capitalizeName(eventName || account.companyName || "resumed events") +": You've been invited to join staff as " + getRoleName(data.invite.role),
       template
     );
     if (!success) throw new Error("Email could not be sent to" + to);

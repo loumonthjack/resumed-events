@@ -1,16 +1,17 @@
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
-
 import viteExpressDevPlugin from "./dev/vite-express-dev-plugin";
-
+import react from "@astrojs/react";
 // NOTE this feels dangerous
 import { env } from "./src/server/constants";
 
+// https://astro.build/config
 export default defineConfig({
   output: 'hybrid',
   adapter: node({
-    mode: 'middleware',
+    mode: 'middleware'
   }),
+  integrations: [react()],
   // srcDir: './src/',
   // publicDir: "./src/public",
   outDir: './dist/astro',
@@ -18,10 +19,13 @@ export default defineConfig({
   vite: {
     plugins: [viteExpressDevPlugin("src/server/main.ts")],
     ssr: {
-      noExternal: ['path-to-regexp'],
+      noExternal: ['path-to-regexp']
     },
+    define: {
+      'process.env.DEFAULT_IMAGE': "https://s3.amazonaws.com/app.local.resumed.website/profile_pics/default.png"
+    }
   },
   server: {
     port: env.PORT
-  }
+  },
 });

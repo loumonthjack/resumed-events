@@ -5,6 +5,8 @@
     "outDir": "dist",
     "lib": ["es2021"],
     "target": "es2021",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -12,7 +14,12 @@
     "baseUrl": ".",
     "paths": {
       "@server/*": ["src/server/*"]
-    }
+    },
+    "plugins": [
+      {
+        "name": "@astro/ts-plugin",
+      }
+    ]
   },
   "files": [
     "src/server/main.ts",
@@ -24,6 +31,8 @@
   //   "src/server/worker.ts",
   //   "src/server/endpoints/networking/*"
   // ],
+  
+  "typescript.inlayHints.parameterNames.enabled": "all",
   "watchOptions": {
     "excludeDirectories": ["**/node_modules", "out"]
   }

@@ -5,7 +5,7 @@ import { NETWORKING_CONFIG } from "../server/constants";
 ---
 
 <BaseLayout
-  title="Login Page"
+  title="Signup Page"
   description="Software that provide event organizers seamless qr code generation for attendees to connect!"
 >
   <nav
@@ -184,41 +184,124 @@ import { NETWORKING_CONFIG } from "../server/constants";
           <h1
             class="text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl dark:text-white"
           >
-            Welcome back
+            Welcome to Resumed Events!
           </h1>
           <!-- TODO -->
           <!-- <Banner /> -->
           <form
-            id="loginForm"
-            action="/auth/login"
+            id="signupForm"
+            action="/auth/signup"
             class="space-y-4 lg:space-y-6"
           >
             <div>
               <label
                 for="email"
                 class="block mb-2 text-sm font-medium text-white dark:text-white"
-                >Email</label
+                >Your Email Address*</label
               >
               <input
                 type="email"
                 name="email"
                 id="email"
                 class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Enter your email"
+                placeholder="john.doe@gmail.com"
                 required=""
               />
+            </div>
+
+            <div class="mb-6">
+              <label
+                for="firstName"
+                class="block mb-2 text-sm font-medium text-white dark:text-white"
+                >Your First Name*</label
+              >
+              <input
+                type="text"
+                id="firstName"
+                class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-sm-light"
+                placeholder="John"
+                required
+              />
+            </div>
+            <div class="mb-6">
+              <label
+                for="lastName"
+                class="block mb-2 text-sm font-medium text-white dark:text-white"
+                >Your Last Name*</label
+              >
+              <input
+                type="text"
+                id="lastName"
+                class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-sm-light"
+                placeholder="Doe"
+                required
+              />
+            </div>
+            <div class="mb-6">
+              <label
+                for="companyName"
+                class="block mb-2 text-sm font-medium text-white dark:text-white"
+                >Your Business Name</label
+              >
+              <input
+                type="text"
+                id="companyName"
+                class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-sm-light"
+                placeholder="Doe Inc"
+              />
+            </div>
+            <div class="mb-6">
+              <label
+                for="profilePicture"
+                class="block mb-2 text-sm font-medium text-white dark:text-white"
+                for="user_avatar">Upload Profile Picture</label
+              >
+              <input
+                id="profilePicture"
+                class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+                aria-describedby="user_avatar_help"
+                type="file"
+              />
+              <div
+                class="mt-1 text-sm text-gray-500 dark:text-gray-300"
+                id="user_avatar_help"
+              >
+                A profile picture is useful to confirm your are logged into your
+                account
+              </div>
+            </div>
+            <div class="flex items-start mb-6">
+              <div class="flex items-center h-5">
+                <input
+                  id="terms"
+                  type="checkbox"
+                  value="yes"
+                  class="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800"
+                  required
+                />
+              </div>
+              <label
+                for="terms"
+                class="ml-2 text-sm font-medium text-gray-400 dark:text-gray-300"
+                >I agree with the <a
+                  href="/terms"
+                  target="_blank"
+                  class="text-white hover:underline dark:text-blue-500"
+                  >terms and conditions*</a
+                ></label
+              >
             </div>
 
             <button
               type="submit"
               class="w-full text-gray-900 bg-white hover:bg-gray-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-              >Sign in to your account</button
+              >Create your account</button
             >
             <p class="text-sm font-light text-gray-500 dark:text-gray-400">
-              Don’t have an account yet? <a
-                href="/signup"
+              Already have an account? <a
+                href="/login"
                 class="font-medium text-white hover:underline dark:text-blue-500"
-                >Sign up here</a
+                >Sign in here</a
               >
             </p>
           </form>
@@ -302,21 +385,50 @@ import { NETWORKING_CONFIG } from "../server/constants";
 </BaseLayout>
 
 <script>
-  const loginForm = document.querySelector("#loginForm") as HTMLFormElement;
-
-  if (!loginForm) {
-    throw new Error("no login form???");
+  const signupForm = document.querySelector("#signupForm") as HTMLFormElement;
+  const urlSearchParams = new URLSearchParams(window.location.search);
+  const urlParams = Object.fromEntries(urlSearchParams.entries());
+  if (!signupForm) {
+    throw new Error("no signup form???");
   }
-
-  loginForm.addEventListener("submit", (event) => {
+  signupForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const params = Object.fromEntries(urlSearchParams.entries());
-    const formData = new FormData(loginForm);
-    if (params.invitationId) {
-      formData.append("invitationId", params.invitationId);
+    const formData = new FormData(signupForm);
+    const firstNameInput = document.querySelector(
+      "#firstName"
+    ) as HTMLInputElement;
+    const lastNameInput = document.querySelector(
+      "#lastName"
+    ) as HTMLInputElement;
+    // TODO add profile picture
+    const profilePictureInput = document.querySelector(
+      "#profilePicture"
+    ) as HTMLInputElement;
+    // if companyName exists add to form data
+    const companyNameInput = document.querySelector(
+      "#companyName"
+    ) as HTMLInputElement;
+    if (companyNameInput.value) {
+      formData.append("companyName", companyNameInput.value);
     }
-    fetch(loginForm.action, {
+    // add to form data
+    formData.append("firstName", firstNameInput.value);
+    formData.append("lastName", lastNameInput.value);
+    if (profilePictureInput.files) {
+      formData.append("profilePicture", profilePictureInput.files[0]);
+    }
+
+    const termsInput = document.querySelector(
+      "#terms"
+    ) as HTMLInputElement;
+    if (termsInput.checked) {
+      formData.append("terms", "yes");
+    }
+    if (urlParams.invitationId) {
+      formData.append("invitationId", urlParams.invitationId);
+    }
+    console.log("form data", formData, signupForm.action)
+    fetch(signupForm.action, {
       method: "POST",
       body: formData,
     })

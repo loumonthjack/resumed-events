@@ -7,7 +7,7 @@ import { prisma } from "../../services/database";
 import { renderTemplate } from "../../templates";
 import Messenger from "../../services/mailer";
 import { uploadEventLogo, uploadProfilePicture } from "../../services/uploader";
-import { capitalizeEventName, removeDuplicates } from "../../../helper";
+import { capitalizeName, removeDuplicates } from "../../../helper";
 import multer from "multer";
 import QRCode from "../../services/generator";
 import { SERVER_URL, STRIPE_MANAGE_LINK } from "../../constants";
@@ -355,7 +355,7 @@ export function sendCountdownTemplate(
   return res.send(
     renderTemplate("eventComingSoon", {
       message:
-        capitalizeEventName(eventInfo.name) +
+        capitalizeName(eventInfo.name) +
         " is just " +
         days +
         (days === 1 ? " day" : " days") +
@@ -365,7 +365,7 @@ export function sendCountdownTemplate(
       event: {
         ...eventInfo,
         startDate: eventInfo.startDate,
-        displayName: capitalizeEventName(eventInfo.name),
+        displayName: capitalizeName(eventInfo.name),
       },
     })
   );
@@ -412,7 +412,7 @@ export async function sendEventCodes(
         qrCodes,
         event: {
           ...eventInfo,
-          displayName: capitalizeEventName(eventInfo.name),
+          displayName: capitalizeName(eventInfo.name),
         },
         configuration,
       })
@@ -424,7 +424,7 @@ export async function sendEventCodes(
       qrCode: qrCodes[0],
       event: {
         ...eventInfo,
-        displayName: capitalizeEventName(eventInfo.name),
+        displayName: capitalizeName(eventInfo.name),
       },
       configuration,
     })
@@ -484,8 +484,8 @@ export async function $handleNetworkingPost(req: Request, res: Response) {
     return res.status(500).send("Error creating event");
   }
   await QRCode.create({
-    name: capitalizeEventName(newEvent.name),
-    title: capitalizeEventName(newEvent.name) + " QR Code",
+    name: capitalizeName(newEvent.name),
+    title: capitalizeName(newEvent.name) + " QR Code",
     url: "http://" + SERVER_URL + "/attendee/" + newEvent.id + "/create",
   }).then(async (code) => {
     await prisma.event.update({
@@ -592,7 +592,7 @@ export async function $sendEventUpdateTemplate(
       linkedin: eventInfo.type?.toLowerCase() === "linkedin",
       personal: eventInfo.type?.toLowerCase() === "personal",
       both: eventInfo.type?.toLowerCase() === "both",
-      displayName: capitalizeEventName(eventInfo.name),
+      displayName: capitalizeName(eventInfo.name),
     },
     configuration: {
       fullName: config?.attendeeData.includes("fullName"),
@@ -613,7 +613,7 @@ export function $sendEventLandingTemplate(
   const eventCode = renderTemplate("eventCode", {
     event: {
       ...eventInfo,
-      displayName: capitalizeEventName(eventInfo.name),
+      displayName: capitalizeName(eventInfo.name),
     },
   });
   return res.send(eventCode);
@@ -635,7 +635,7 @@ export async function $sendAttendeeCodeTemplate(
   const eventCode = renderTemplate("eventUserCode", {
     event: {
       ...eventInfo,
-      displayName: capitalizeEventName(eventInfo.name),
+      displayName: capitalizeName(eventInfo.name),
     },
     attendee,
   });

@@ -2,6 +2,7 @@ import { Request, Response as ExpressResponse, Router } from "express";
 import { prisma } from "./database";
 import Messenger from "./mailer";
 import {
+  RoleType,
   SubscriptionPeriodEnum,
   SubscriptionStatusEnum,
   SubscriptionTypeEnum,
@@ -27,14 +28,23 @@ export async function handleCharge(event: Request["body"]) {
     },
   });
   if (!user) throw new Error("Event not found");
+  const userRole = await prisma.userRole.findFirst({
+    where: {
+      userId: user.id,
+      Role: {
+        name: RoleType.ADMINISTRATOR
+      }
+    },
+  });
+  if (!userRole) throw new Error("User role not found");
   await prisma.subscription.create({
     data: {
       id: `sub_${cuid()}`,
       status: SubscriptionStatusEnum.ACTIVE,
       externalId: event.data.object.subscription,
-      User: {
+      Account: {
         connect: {
-          id: user.id,
+          id: userRole.accountId,
         },
       },
       SubscriptionType: {
@@ -46,9 +56,9 @@ export async function handleCharge(event: Request["body"]) {
     },
   });
 
-  await prisma.user.update({
+  await prisma.account.update({
     where: {
-      id: user.id,
+      id: userRole.accountId,
     },
     data: {
       isActive: true,
@@ -70,9 +80,10 @@ export const checkSubscription = async (stripeId: string) => {
       status: SubscriptionStatusEnum.INACTIVE,
     },
   });
-  await prisma.user.update({
+  if (!sub) throw new Error("Subscription not found");
+  await prisma.account.update({
     where: {
-      id: sub.userId,
+      id: sub.accountId,
     },
     data: {
       isActive: false,
