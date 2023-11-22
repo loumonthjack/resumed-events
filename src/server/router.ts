@@ -8,7 +8,7 @@ import cookieParser from "cookie-parser";
 
 import auth from "./services/auth";
 
-import { ASTRO_CLIENT_DIST_PATH } from "./constants";
+import { ASTRO_CLIENT_DIST_PATH, NODE_ENV } from "./constants";
 
 const router = express.Router();
 
@@ -33,7 +33,9 @@ router.get("/auth/verify", auth.verifyHandler());
 // router.use(networkingRoute);
 
 /* STATIC ROUTES */
-router.use(express.static(ASTRO_CLIENT_DIST_PATH));
+if (NODE_ENV === "production") {
+  router.use(express.static(ASTRO_CLIENT_DIST_PATH));
+}
 
 // TODO astro ssr
 // router.use((req, res, next) => {

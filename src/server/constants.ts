@@ -14,6 +14,7 @@ const NODE_ENV_MAP = {
   production: "prod",
 } as const;
 
+// TODO undo this is unreadable 🤦‍♂️
 export const NODE_ENV: NodeEnv = __ASSERT__isValid(
   process.env.NODE_ENV,
   isValidNodeEnv,
