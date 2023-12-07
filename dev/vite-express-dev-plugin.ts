@@ -1,5 +1,5 @@
 import { ViteDevServer } from "vite";
-import { getViteConfig } from "astro/config";
+// import { getViteConfig } from "astro/config";
 
 export default function viteExpressDevPlugin(path: string) {
   if (!path) {
@@ -17,7 +17,7 @@ export default function viteExpressDevPlugin(path: string) {
         //   command: "serve",
         //   mode: "development",
         // });
-        console.log("vite-express-dev-plugin", path)
+        // console.log("vite-express-dev-plugin", path)
         
         process.env["VITE"] = "true";
         

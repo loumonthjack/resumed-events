@@ -1,17 +1,26 @@
 import express, { type Request, Response, NextFunction } from "express";
 import db, { prisma } from "./database";
 import mailer from "./mailer";
-import sendgridClient from '@sendgrid/client';
-import { EventWebhook } from '@sendgrid/eventwebhook';
 import { checkSubscription } from "./payment";
-import { determineStripePaymentPage, handleProfilePictureUpload } from "../endpoints/networking/functions";
-import { EmailStatus, InviteStatus, RoleType, SubscriptionTypeEnum } from "@prisma/client";
+import {
+  determineStripePaymentPage,
+  handleProfilePictureUpload,
+} from "../endpoints/networking/functions";
+import { InviteStatus, RoleType, SubscriptionTypeEnum } from "@prisma/client";
 import { getCookieName, setCookies } from "../middleware";
-import { SENDGRID_WEBHOOK_KEY, env } from "../constants";
 
 function signupHandler() {
   return async (req: Request, res: Response) => {
-    const { email, firstName, lastName, terms, profilePicture, invitationId, companyName, redirectTo } = req.body;
+    const {
+      email,
+      firstName,
+      lastName,
+      terms,
+      profilePicture,
+      invitationId,
+      companyName,
+      redirectTo,
+    } = req.body;
     // TODO validate incoming register data (email, firstName, lastName)
     if (!email || !firstName || !lastName || !terms) {
       return res.sendStatus(400);
@@ -59,24 +68,27 @@ function signupHandler() {
         name: `${firstName} ${lastName}`,
         subject: "Resumed Events - Verify your email address",
         verification: true,
-        redirectTo: redirectTo || '/dashboard?firstTime=true',
+        redirectTo: redirectTo || "/dashboard?firstTime=true",
       });
 
       return res.send({ success: true });
     } else {
-      const userId = await db.create.invitedUser({
-        email: email.toLowerCase().trim(),
-        firstName: firstName.toLowerCase().trim(),
-        lastName: lastName.toLowerCase().trim(),
-        profilePicture: null,
-        terms: terms === "yes",
-        isFirstTime: true,
-        isVerified: false,
-      }, invitationId);
+      const userId = await db.create.invitedUser(
+        {
+          email: email.toLowerCase().trim(),
+          firstName: firstName.toLowerCase().trim(),
+          lastName: lastName.toLowerCase().trim(),
+          profilePicture: null,
+          terms: terms === "yes",
+          isFirstTime: true,
+          isVerified: false,
+        },
+        invitationId
+      );
       if (!userId) {
         throw new Error("Failed to create user");
       }
-      if (!(req.body.profilePicture === 'undefined')) {
+      if (!(req.body.profilePicture === "undefined")) {
         await handleProfilePictureUpload(profilePicture, userId);
       }
       const invitation = await prisma.invite.findUnique({
@@ -106,12 +118,11 @@ function signupHandler() {
         name: `${firstName} ${lastName}`,
         subject: "Resumed Events - Verify your email address",
         verification: true,
-        redirectTo: redirectTo || '/dashboard?firstTime=true',
+        redirectTo: redirectTo || "/dashboard?firstTime=true",
       });
 
       return res.send({ success: true });
     }
-
   };
 }
 
@@ -169,7 +180,12 @@ function loginHandler() {
       if (!role) {
         throw new Error("Failed to find role");
       }
-      await db.create.userRole(user.id, role.id, invite.accountId, invite.eventId || undefined);
+      await db.create.userRole(
+        user.id,
+        role.id,
+        invite.accountId,
+        invite.eventId || undefined
+      );
     }
     const session = await prisma.session.findFirst({
       where: {
@@ -253,8 +269,17 @@ function verifyHandler() {
         // WARN UR_1 - should be unreachable
         throw Error("[auth] UR_1: valid session but user undefined...");
       }
-      const paymentRedirect = [SubscriptionTypeEnum.BASIC, SubscriptionTypeEnum.PRO, SubscriptionTypeEnum.FREE, SubscriptionTypeEnum.CUSTOM]
-      if (paymentRedirect.includes(redirectTo.toString().toUpperCase() as SubscriptionTypeEnum)) {
+      const paymentRedirect = [
+        SubscriptionTypeEnum.BASIC,
+        SubscriptionTypeEnum.PRO,
+        SubscriptionTypeEnum.FREE,
+        SubscriptionTypeEnum.CUSTOM,
+      ];
+      if (
+        paymentRedirect.includes(
+          redirectTo.toString().toUpperCase() as SubscriptionTypeEnum
+        )
+      ) {
         const getLink = await determineStripePaymentPage(
           redirectTo.toString().toUpperCase(),
           user.email
@@ -329,7 +354,9 @@ function inviteHandler() {
         email: invite?.email,
       },
     });
-    return user ? res.redirect(`/login?invitationId=${id}&read_only=${invite?.email}`) : res.redirect(`/signup?invitationId=${id}&read_only=${invite?.email}`);
+    return user
+      ? res.redirect(`/login?invitationId=${id}&read_only=${invite?.email}`)
+      : res.redirect(`/signup?invitationId=${id}&read_only=${invite?.email}`);
   };
 }
 async function webhookHandler(req: Request, res: Response) {
@@ -409,9 +436,8 @@ async function webhookHandler(req: Request, res: Response) {
       }
     }
   }
-  return res.end('ok');
+  return res.end("ok");
 }
-
 
 export default {
   loginHandler,

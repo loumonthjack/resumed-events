@@ -9,7 +9,7 @@ import cookieParser from "cookie-parser";
 import auth from "./services/auth";
 import api from "./services/api";
 
-import { ASTRO_CLIENT_DIST_PATH } from "./constants";
+import { ASTRO_CLIENT_DIST_PATH, NODE_ENV } from "./constants";
 import { requireAuth } from "./middleware";
 
 const router = express.Router();
@@ -29,13 +29,11 @@ router.post(
 
 router.post(
   "/auth/signup",
-  redirect('/dashboard', (req) => Boolean(req.session)),
-  multerUpload.single('profilePicture'),
+  redirect("/dashboard", (req) => Boolean(req.session)),
+  multerUpload.single("profilePicture"),
   auth.signupHandler()
-)
-router.get("/auth/invite",
-  auth.inviteHandler()
 );
+router.get("/auth/invite", auth.inviteHandler());
 router.post("/auth/logout", requireAuth, auth.logoutHandler());
 
 router.get("/auth/verify", auth.verifyHandler());
@@ -47,8 +45,11 @@ router.post("/operation/:operationName", requireAuth, api.adapterHandler());
 // router.use(networkingRoute);
 
 /* STATIC ROUTES */
-router.use(express.static(ASTRO_CLIENT_DIST_PATH));
+if (NODE_ENV === "production") {
+  router.use(express.static(ASTRO_CLIENT_DIST_PATH));
+}
 
+// router.get("/dashboard/:path*", redirect("/dashboard"));
 // TODO astro ssr
 // router.use((req, res, next) => {
 //   const locals = {};

@@ -5,6 +5,8 @@ import path from "path";
 // load .env into process.env
 import "dotenv/config";
 
+// TODO separate client and server constants
+
 // verify process.env
 type NodeEnv = keyof typeof NODE_ENV_MAP;
 type NodeEnvShort = (typeof NODE_ENV_MAP)[NodeEnv];
@@ -38,7 +40,7 @@ const zEnvVar = z.object({
   // does test version need to exist?
   STRIPE_WEBHOOK_KEY: z.string(),
   STRIPE_SECRET_KEY: z.string(),
-  SENDGRID_WEBHOOK_KEY: z.string(),
+  SENDGRID_WEBHOOK_KEY: z.string().optional(),
 });
 
 // throws if invalid
@@ -64,7 +66,7 @@ export const AWS_BUCKET_NAME: string =
 // Stripe webhook and secret keys
 export const STRIPE_WEBHOOK_KEY: string = env.STRIPE_WEBHOOK_KEY;
 export const STRIPE_SECRET_KEY: string = env.STRIPE_SECRET_KEY;
-export const SENDGRID_WEBHOOK_KEY: string = env.SENDGRID_WEBHOOK_KEY;
+export const SENDGRID_WEBHOOK_KEY: string = env.SENDGRID_WEBHOOK_KEY || "";
 
 // TODO get paths from central location
 export const TEMPLATE_PATH = path.join(process.cwd(), "src/templates");

@@ -10,22 +10,22 @@ const { title, description } = Astro.props;
     <Head title={title} description={description} />
     <slot name="head" />
     <script>
-      import invite from "../inviteRegister";
-      import { getUser } from "../setUser";
-      import { getCookies, cookieKeys } from "../getCookies";
-      invite();
-      
-      const cookie = getCookies();
-      if (cookie) {
-        for (let key in cookieKeys) {
-          if (key.includes("resumed-session")) {
-            const user = await getUser(key, cookie);
-            if (user) {
-              localStorage.setItem("user", JSON.stringify(user));
-            }
-          }
-        }
-      }
+      // import invite from "../inviteRegister";
+      // import { getUser } from "../setUser";
+      // import { getCookies, cookieKeys } from "../getCookies";
+      // invite();
+
+      // const cookie = getCookies();
+      // if (cookie) {
+      //   for (let key in cookieKeys) {
+      //     if (key.includes("resumed-session")) {
+      //       const user = await getUser(key, cookie);
+      //       if (user) {
+      //         localStorage.setItem("user", JSON.stringify(user));
+      //       }
+      //     }
+      //   }
+      // }
     </script>
   </head>
   <body>

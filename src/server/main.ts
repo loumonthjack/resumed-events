@@ -61,8 +61,10 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
 
 app.use(errorHandler);
 
-app.listen(env.PORT, () =>
-  console.log(`Server listening running ${FULL_SERVER_URL}`)
-);
+if (NODE_ENV === "production") {
+  app.listen(env.PORT, () =>
+    console.log(`Server listening running ${FULL_SERVER_URL}`)
+  );
+}
 
 export const expressServer = app;
