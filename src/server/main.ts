@@ -17,6 +17,8 @@ import auth from "./services/auth";
 export const stripe = new Stripe(STRIPE_WEBHOOK_KEY);
 const app = express();
 
+
+
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -61,10 +63,10 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
 
 app.use(errorHandler);
 
-if (NODE_ENV === "production") {
+// if (NODE_ENV === "production") {
   app.listen(env.PORT, () =>
     console.log(`Server listening running ${FULL_SERVER_URL}`)
   );
-}
+// }
 
 export const expressServer = app;

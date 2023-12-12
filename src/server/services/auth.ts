@@ -148,11 +148,16 @@ function loginHandler() {
     const { email, invitationId } = req.body;
     // TODO validate incoming login data (email)
 
-    const user = await prisma.user.findUniqueOrThrow({
+    const user = await prisma.user.findUnique({
       where: {
         email: email.toLowerCase(),
       },
     });
+
+    if (!user) {
+      return res.status(400).json({ message: "no user found, please register" });
+    }
+
     const userRole = await prisma.userRole.findFirst({
       where: {
         userId: user.id,

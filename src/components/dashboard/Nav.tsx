@@ -6,7 +6,6 @@ import Query from "../../queries";
 import { FULL_SERVER_URL } from "../../env/client";
 
 function Navigation() {
-
   const userQuery = Query.getUser()
 
   return (

@@ -4,7 +4,7 @@ import { ZodSchema, z } from "zod";
 
 import type { User } from "@prisma/client";
 
-import { SERVER_URL } from "./env/client";
+import { FULL_SERVER_URL } from "./env/client";
 
 export const queryClient = new QueryClient();
 
@@ -25,7 +25,8 @@ async function fetchApi<T = any>(
   endpoint: string,
   init?: RequestInit
 ): Promise<T> {
-  const response = await fetch(new URL(endpoint, SERVER_URL), init);
+  const url = new URL(endpoint, FULL_SERVER_URL);
+  const response = await fetch(new URL(endpoint, FULL_SERVER_URL), init);
   const json = await response.json();
   // TODO validation
   return json as T;

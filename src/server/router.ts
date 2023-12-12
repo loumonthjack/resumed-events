@@ -45,9 +45,11 @@ router.post("/operation/:operationName", requireAuth, api.adapterHandler());
 // router.use(networkingRoute);
 
 /* STATIC ROUTES */
-if (NODE_ENV === "production") {
+// if (NODE_ENV === "production") {
   router.use(express.static(ASTRO_CLIENT_DIST_PATH));
-}
+// }
+// router.get(res.send)
+
 
 // router.get("/dashboard/:path*", redirect("/dashboard"));
 // TODO astro ssr

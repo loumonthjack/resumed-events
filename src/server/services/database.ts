@@ -1,4 +1,14 @@
-import { Account, Invite, InviteStatus, Event, Notification, PrismaClient, RoleType, User, EventConfiguration } from "@prisma/client";
+import {
+  Account,
+  Invite,
+  InviteStatus,
+  Event,
+  Notification,
+  PrismaClient,
+  RoleType,
+  User,
+  EventConfiguration,
+} from "@prisma/client";
 import { createId as cuid } from "@paralleldrive/cuid2";
 import mailer from "./mailer";
 import { capitalizeName, getRoleName } from "../../helper";
@@ -61,27 +71,47 @@ async function removeUserRole(userId: string, userRoleId: string) {
     },
   });
 }
-async function createUserRole(userId: string, roleId: string, accountId: string, eventId?: string) {
+async function createUserRole(
+  userId: string,
+  roleId: string,
+  accountId: string,
+  eventId?: string
+) {
   const userRoles = await prisma.userRole.findMany({
     where: {
       userId: userId,
     },
   });
 
-  const defaultRole = userRoles.length > 0 && userRoles.find((userRole) => userRole.isDefault);
-  return await prisma.userRole.create({
-    data: {
-      id: `usr_rol_${cuid()}`,
-      userId: userId,
-      roleId: roleId,
-      isDefault: defaultRole && defaultRole.isDefault ? false : true,
-      accountId: accountId,
-      eventId: eventId || undefined,
-      createdAt: new Date(),
-    },
-  });
+  const defaultRole =
+    userRoles.length > 0 && userRoles.find((userRole) => userRole.isDefault);
+  console.log("default role", defaultRole);
+  console.log("user", userId);
+  console.log("role", roleId);
+  console.log("acc", accountId);
+  console.log("ev", eventId);
+
+  try {
+    return await prisma.userRole.create({
+      data: {
+        id: `usr_rol_${cuid()}`,
+        userId: userId,
+        roleId: roleId,
+        isDefault: true,
+        accountId: accountId,
+        eventId: eventId || undefined,
+        createdAt: new Date(),
+      },
+    });
+  } catch (err) {
+    console.error(err);
+  }
 }
-async function createNotification(notification: Omit<Notification, "id" | "createdAt" | "updatedAt">, userType?: RoleType, userId?: User["id"]) {
+async function createNotification(
+  notification: Omit<Notification, "id" | "createdAt" | "updatedAt">,
+  userType?: RoleType,
+  userId?: User["id"]
+) {
   return await prisma.$transaction(async (prisma) => {
     const notify = await prisma.notification.create({
       data: {
@@ -115,7 +145,7 @@ async function createNotification(notification: Omit<Notification, "id" | "creat
             },
           },
         },
-      }
+      };
     }
 
     const users = await prisma.user.findMany(byUserType);
@@ -126,7 +156,6 @@ async function createNotification(notification: Omit<Notification, "id" | "creat
         hasRead: false,
         notificationId: notify.id,
         createdAt: new Date(),
-
       };
     });
     await prisma.alert.createMany({
@@ -140,7 +169,13 @@ async function createRoles() {
       data: {
         id: `rol_${cuid()}`,
         name: RoleType.ADMINISTRATOR,
-        permissions: ["company_billing", "company_users", "company_settings", "company_read", "company_write"],
+        permissions: [
+          "company_billing",
+          "company_users",
+          "company_settings",
+          "company_read",
+          "company_write",
+        ],
         createdAt: new Date(),
       },
     });
@@ -156,7 +191,12 @@ async function createRoles() {
       data: {
         id: `rol_${cuid()}`,
         name: RoleType.COMPANY_MANAGER,
-        permissions: ["company_read", "company_write", "company_settings", "company_users"],
+        permissions: [
+          "company_read",
+          "company_write",
+          "company_settings",
+          "company_users",
+        ],
         createdAt: new Date(),
       },
     });
@@ -178,8 +218,13 @@ async function createRoles() {
     });
   });
 }
-"/auth/signup?redirectTo=/inviteId/accept&email=inviteEmail"
-async function createInvite(invite: Omit<Invite, "id" | "updatedAt" | "createdAt" | "status" | "emailStatus" | "externalId"> & { role: Omit<RoleType, "ADMINISTRATOR"> }) {
+("/auth/signup?redirectTo=/inviteId/accept&email=inviteEmail");
+async function createInvite(
+  invite: Omit<
+    Invite,
+    "id" | "updatedAt" | "createdAt" | "status" | "emailStatus" | "externalId"
+  > & { role: Omit<RoleType, "ADMINISTRATOR"> }
+) {
   return await prisma.$transaction(async (prisma) => {
     const invitation = await prisma.invite.create({
       data: {
@@ -221,26 +266,35 @@ async function createInvite(invite: Omit<Invite, "id" | "updatedAt" | "createdAt
         },
       });
       if (!admin) throw new Error("Admin not found");
-      await createNotification({
-        title: "Invitation",
-        body: `${capitalizeName(eventName || account?.companyName || `${admin.firstName} ${admin.lastName}`)} has invited you to join as ${getRoleName(invite.role)}. Click here to below the invitation.`,
-        link: FULL_SERVER_URL + `/auth/invite?id=${invitation.id}`,
-      }, undefined, user.id)
-
+      await createNotification(
+        {
+          title: "Invitation",
+          body: `${capitalizeName(
+            eventName ||
+              account?.companyName ||
+              `${admin.firstName} ${admin.lastName}`
+          )} has invited you to join as ${getRoleName(
+            invite.role
+          )}. Click here to below the invitation.`,
+          link: FULL_SERVER_URL + `/auth/invite?id=${invitation.id}`,
+        },
+        undefined,
+        user.id
+      );
     }
 
     await mailer.sendInvitationEmail(invite.email, {
       invite,
       redirectTo: `/auth/invite?id=${invitation.id}`,
-    })
+    });
     await prisma.invite.update({
       where: {
         id: invitation.id,
       },
       data: {
-        emailStatus: "SENT"
-      }
-    })
+        emailStatus: "SENT",
+      },
+    });
     return invitation;
   });
 }
@@ -280,9 +334,12 @@ async function updateInviteStatus(inviteId: string, status: InviteStatus) {
     data: {
       status: status,
     },
-  })
+  });
 }
-async function createUser(user: Omit<User, "id" | "updatedAt" | "createdAt">, inviteId: string) {
+async function createUser(
+  user: Omit<User, "id" | "updatedAt" | "createdAt">,
+  inviteId: string
+) {
   const userId = `usr_${cuid()}`;
   const create = await prisma.user.create({
     data: {
@@ -308,16 +365,26 @@ async function createUser(user: Omit<User, "id" | "updatedAt" | "createdAt">, in
     throw new Error("Failed to find role");
   }
   await updateInviteStatus(inviteId, InviteStatus.ACCEPTED);
-  await createUserRole(create.id, role.id, invitation.accountId, invitation.eventId || undefined);
+  await createUserRole(
+    create.id,
+    role.id,
+    invitation.accountId,
+    invitation.eventId || undefined
+  );
   return create.id;
 }
-async function createAdminUser(user: Omit<User, "id" | "updatedAt" | "createdAt"> & { companyName?: string }) {
+async function createAdminUser(
+  user: Omit<User, "id" | "updatedAt" | "createdAt"> & { companyName?: string }
+) {
   return await prisma.$transaction(async (prisma) => {
     const userId = `usr_${cuid()}`;
     const accountId = `acc_${cuid()}`;
     const configId = `cfg_${cuid()}`;
     const company = user.companyName;
-    user["companyName"] = undefined;
+    delete user.companyName;
+
+    console.log(userId, accountId, configId, company);
+
     const createUser = await prisma.user.create({
       data: {
         ...user,
@@ -325,6 +392,8 @@ async function createAdminUser(user: Omit<User, "id" | "updatedAt" | "createdAt"
         id: userId,
       },
     });
+
+    console.log("created user");
 
     await prisma.account.create({
       data: {
@@ -335,6 +404,8 @@ async function createAdminUser(user: Omit<User, "id" | "updatedAt" | "createdAt"
       },
     });
 
+    console.log("created account");
+
     await prisma.configuration.create({
       data: {
         id: configId,
@@ -343,11 +414,15 @@ async function createAdminUser(user: Omit<User, "id" | "updatedAt" | "createdAt"
       },
     });
 
+    console.log("created config");
+
     let adminRole = await prisma.role.findUnique({
       where: {
         name: RoleType.ADMINISTRATOR,
       },
     });
+
+    console.log("created admin role");
 
     if (!adminRole) {
       await createRoles();
@@ -381,16 +456,25 @@ async function createSession(userRoleId: string) {
   });
   return sessionCode;
 }
-async function createEvent(event: Omit<Event, "id" | "updatedAt" | "createdAt" | "isArchived" | "externalId"> & {
-  configuration?: Omit<EventConfiguration, "id" | "updatedAt" | "createdAt" | "eventId">, invitees?:
-  Array<{
-    email: string,
-    firstName?: string,
-    lastName?: string,
-    role: RoleType | "ATTENDEE"
-  }>
-}) {
-  if (!event.startDate || !event.endDate) throw new Error("Event must have a start and end date");
+async function createEvent(
+  event: Omit<
+    Event,
+    "id" | "updatedAt" | "createdAt" | "isArchived" | "externalId"
+  > & {
+    configuration?: Omit<
+      EventConfiguration,
+      "id" | "updatedAt" | "createdAt" | "eventId"
+    >;
+    invitees?: Array<{
+      email: string;
+      firstName?: string;
+      lastName?: string;
+      role: RoleType | "ATTENDEE";
+    }>;
+  }
+) {
+  if (!event.startDate || !event.endDate)
+    throw new Error("Event must have a start and end date");
   const configuration = event.configuration;
   const invites = event.invitees;
   event["configuration"] = undefined;
@@ -413,7 +497,6 @@ async function createEvent(event: Omit<Event, "id" | "updatedAt" | "createdAt" |
     },
   });
   invites?.forEach(async (invitee) => {
-
     if (invitee.role === "ATTENDEE") {
       const notify = await prisma.attendeeNotify.create({
         data: {
@@ -422,8 +505,8 @@ async function createEvent(event: Omit<Event, "id" | "updatedAt" | "createdAt" |
           createdAt: new Date(),
           eventId: create.id,
           emailStatus: "NOT_SENT",
-        }
-      })
+        },
+      });
       if (configuration?.enableEarlyAccess === true) {
         await mailer.sendNotifyEmails(invitee.email, {
           event: create,
@@ -436,7 +519,7 @@ async function createEvent(event: Omit<Event, "id" | "updatedAt" | "createdAt" |
           data: {
             hasSent: true,
             emailStatus: "SENT",
-          }
+          },
         });
       }
     } else {
@@ -446,21 +529,28 @@ async function createEvent(event: Omit<Event, "id" | "updatedAt" | "createdAt" |
         lastName: invitee.lastName || null,
         accountId: event.accountId,
         eventId: create.id,
-        role: invitee.role
+        role: invitee.role,
       });
     }
   });
   return create;
 }
-async function updateEvent(eventId: string, event: Partial<Omit<Event, "id" | "updatedAt" | "createdAt" | "isArchived" | "externalId">> & {
-  configuration?: Partial<Omit<EventConfiguration, "id" | "updatedAt" | "createdAt" | "eventId">>
-  invitees?: Array<{
-    email: string,
-    firstName?: string,
-    lastName?: string,
-    role: RoleType | "ATTENDEE"
-  }>
-}) {
+async function updateEvent(
+  eventId: string,
+  event: Partial<
+    Omit<Event, "id" | "updatedAt" | "createdAt" | "isArchived" | "externalId">
+  > & {
+    configuration?: Partial<
+      Omit<EventConfiguration, "id" | "updatedAt" | "createdAt" | "eventId">
+    >;
+    invitees?: Array<{
+      email: string;
+      firstName?: string;
+      lastName?: string;
+      role: RoleType | "ATTENDEE";
+    }>;
+  }
+) {
   const configuration = event.configuration;
   const invites = event.invitees;
   event["configuration"] = undefined;
@@ -495,8 +585,8 @@ async function updateEvent(eventId: string, event: Partial<Omit<Event, "id" | "u
             createdAt: new Date(),
             eventId: update.id,
             emailStatus: "NOT_SENT",
-          }
-        })
+          },
+        });
         if (configuration?.enableEarlyAccess === true) {
           await mailer.sendNotifyEmails(invitee.email, {
             event: update,
@@ -509,7 +599,7 @@ async function updateEvent(eventId: string, event: Partial<Omit<Event, "id" | "u
             data: {
               hasSent: true,
               emailStatus: "SENT",
-            }
+            },
           });
         }
       } else {
@@ -519,7 +609,7 @@ async function updateEvent(eventId: string, event: Partial<Omit<Event, "id" | "u
           lastName: invitee.lastName || null,
           accountId: event.accountId!,
           eventId: update.id,
-          role: invitee.role
+          role: invitee.role,
         });
       }
     });
@@ -550,7 +640,7 @@ const deleteInvite = async (inviteId: string) => {
       id: inviteId,
     },
   });
-}
+};
 async function searchEventsByName(query: string, accountId: string) {
   return await prisma.event.findMany({
     where: {
@@ -571,22 +661,24 @@ async function searchAttendees(query: string, eventId: string) {
 
   const results = attendees.filter((attendee) => {
     return attendee.data;
-  })
+  });
 
   return results.map((result: any) => {
     const data: Record<string, unknown> = result.data;
     const keys = Object.keys(data);
     const values = Object.values(data);
     // if any of the values match the query, return the result
-    if (values.some((value) => {
-      if (typeof value === "string") {
-        return value.toLowerCase().includes(query.toLowerCase());
-      }
-      return;
-    })) {
+    if (
+      values.some((value) => {
+        if (typeof value === "string") {
+          return value.toLowerCase().includes(query.toLowerCase());
+        }
+        return;
+      })
+    ) {
       return result;
     }
-  })
+  });
 }
 export default {
   search: {
@@ -605,188 +697,199 @@ export default {
   },
   get: {
     // all roles for a user
-    userRolesByUser: (userId: User["id"]) => prisma.userRole.findMany({
-      where: {
-        userId: userId,
-      },
-      include: {
-        User: true,
-        Account: true,
-        Role: true,
-        Event: true,
-      },
-    }),
-    // all roles at company
-    userRolesByAccount: (accountId: Account["id"]) => prisma.userRole.findMany({
-      where: {
-        accountId: accountId,
-      },
-      include: {
-        User: true,
-        Account: true,
-        Role: true,
-        Event: true,
-      },
-    }),
-    // all invites for a company
-    invitesByAccount: (accountId: Account["id"]) => prisma.invite.findMany({
-      where: {
-        accountId: accountId,
-      },
-    }),
-    // all sessions for a user (should only be one)
-    sessionsByUser: (userId: User["id"]) => prisma.session.findMany({
-      where: {
-        UserRole: {
+    userRolesByUser: (userId: User["id"]) =>
+      prisma.userRole.findMany({
+        where: {
           userId: userId,
         },
-      },
-    }),
-    // configuration for all events at company
-    configurationByAccount: (accountId: Account["id"]) => prisma.configuration.findUnique({
-      where: {
-        accountId: accountId,
-      },
-    }),
-    // all events at company
-    eventsByAccount: (accountId: Account["id"]) => prisma.event.findMany({
-      where: {
-        accountId: accountId,
-      },
-      include: {
-        EventConfiguration: {
-          select: {
-            attendeeData: true,
-            showAttendeeLeaderboard: true,
-            showSlideControls: true,
-            setLimit: true,
-            enableEarlyAccess: true,
-          },
+        include: {
+          User: true,
+          Account: true,
+          Role: true,
+          Event: true,
         },
-        AttendeeInvites: {
-          select: {
-            email: true,
-            hasSent: true,
-            emailStatus: true,
-          },
+      }),
+    // all roles at company
+    userRolesByAccount: (accountId: Account["id"]) =>
+      prisma.userRole.findMany({
+        where: {
+          accountId: accountId,
         },
-        EventAttendants: {
-          select: {
-            data: true,
-          }
+        include: {
+          User: true,
+          Account: true,
+          Role: true,
+          Event: true,
         },
-        Invites: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-            role: true,
-            status: true,
-            emailStatus: true,
-          }
+      }),
+    // all invites for a company
+    invitesByAccount: (accountId: Account["id"]) =>
+      prisma.invite.findMany({
+        where: {
+          accountId: accountId,
         },
-        UserRoles: {
-          select: {
-            User: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-              }
-            },
-            Role: {
-              select: {
-                name: true,
-                permissions: true,
-              }
-            }
-          }
-        }
-      }
-    }),
-    // all notifications for a user
-    notificationsByUser: (userId: User["id"]) => prisma.notification.findMany({
-      where: {
-        Alerts: {
-          some: {
+      }),
+    // all sessions for a user (should only be one)
+    sessionsByUser: (userId: User["id"]) =>
+      prisma.session.findMany({
+        where: {
+          UserRole: {
             userId: userId,
-          }
-        },
-      },
-    }),
-    // all subscriptions at company
-    subscriptionsByAccount: (accountId: Account["id"]) => prisma.subscription.findMany({
-      where: {
-        accountId: accountId,
-      },
-    }),
-    // event attendees
-    attendeesByEvent: (eventId: string) => prisma.eventAttendant.findMany({
-      where: {
-        eventId: eventId,
-      },
-    }),
-    // event staff
-    userRolesByEvent: (eventId: string) => prisma.userRole.findMany({
-      where: {
-        eventId: eventId,
-      },
-    }),
-    getEventById: (eventId: string) => prisma.event.findUnique({
-      where: {
-        id: eventId
-      },
-      include: {
-        EventConfiguration: {
-          select: {
-            attendeeData: true,
-            showAttendeeLeaderboard: true,
-            showSlideControls: true,
-            setLimit: true,
-            enableEarlyAccess: true,
           },
         },
-        AttendeeInvites: {
-          select: {
-            email: true,
-            hasSent: true,
-            emailStatus: true,
-          },
+      }),
+    // configuration for all events at company
+    configurationByAccount: (accountId: Account["id"]) =>
+      prisma.configuration.findUnique({
+        where: {
+          accountId: accountId,
         },
-        EventAttendants: {
-          select: {
-            data: true,
-          }
+      }),
+    // all events at company
+    eventsByAccount: (accountId: Account["id"]) =>
+      prisma.event.findMany({
+        where: {
+          accountId: accountId,
         },
-        Invites: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-            role: true,
-            status: true,
-            emailStatus: true,
-          }
-        },
-        UserRoles: {
-          select: {
-            User: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-              }
+        include: {
+          EventConfiguration: {
+            select: {
+              attendeeData: true,
+              showAttendeeLeaderboard: true,
+              showSlideControls: true,
+              setLimit: true,
+              enableEarlyAccess: true,
             },
-            Role: {
-              select: {
-                name: true,
-                permissions: true,
-              }
-            }
-          }
-        }
-      }
-    }),
+          },
+          AttendeeInvites: {
+            select: {
+              email: true,
+              hasSent: true,
+              emailStatus: true,
+            },
+          },
+          EventAttendants: {
+            select: {
+              data: true,
+            },
+          },
+          Invites: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              status: true,
+              emailStatus: true,
+            },
+          },
+          UserRoles: {
+            select: {
+              User: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+              Role: {
+                select: {
+                  name: true,
+                  permissions: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    // all notifications for a user
+    notificationsByUser: (userId: User["id"]) =>
+      prisma.notification.findMany({
+        where: {
+          Alerts: {
+            some: {
+              userId: userId,
+            },
+          },
+        },
+      }),
+    // all subscriptions at company
+    subscriptionsByAccount: (accountId: Account["id"]) =>
+      prisma.subscription.findMany({
+        where: {
+          accountId: accountId,
+        },
+      }),
+    // event attendees
+    attendeesByEvent: (eventId: string) =>
+      prisma.eventAttendant.findMany({
+        where: {
+          eventId: eventId,
+        },
+      }),
+    // event staff
+    userRolesByEvent: (eventId: string) =>
+      prisma.userRole.findMany({
+        where: {
+          eventId: eventId,
+        },
+      }),
+    getEventById: (eventId: string) =>
+      prisma.event.findUnique({
+        where: {
+          id: eventId,
+        },
+        include: {
+          EventConfiguration: {
+            select: {
+              attendeeData: true,
+              showAttendeeLeaderboard: true,
+              showSlideControls: true,
+              setLimit: true,
+              enableEarlyAccess: true,
+            },
+          },
+          AttendeeInvites: {
+            select: {
+              email: true,
+              hasSent: true,
+              emailStatus: true,
+            },
+          },
+          EventAttendants: {
+            select: {
+              data: true,
+            },
+          },
+          Invites: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              status: true,
+              emailStatus: true,
+            },
+          },
+          UserRoles: {
+            select: {
+              User: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+              Role: {
+                select: {
+                  name: true,
+                  permissions: true,
+                },
+              },
+            },
+          },
+        },
+      }),
   },
   update: {
     inviteStatus: updateInviteStatus,
@@ -807,5 +910,5 @@ export default {
   },
   archive: {
     event: archiveEvent,
-  }
+  },
 };
