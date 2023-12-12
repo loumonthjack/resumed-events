@@ -8,9 +8,11 @@ import cookieParser from "cookie-parser";
 
 import auth from "./services/auth";
 import api from "./services/api";
+import { EventType, Pages } from "./pages"
 
 import { ASTRO_CLIENT_DIST_PATH } from "./constants";
-import { requireAuth } from "./middleware";
+import { authValidate } from "./middleware";
+import { prisma } from "./services/database";
 
 const router = express.Router();
 // used to parse form data (multipart/form-data)
@@ -18,8 +20,63 @@ const multerUpload = multer();
 
 router.use(cookieParser());
 router.use(auth.sessionLoader());
-/* AUTHENTICATION ROUTES */
-// NOTE moved auth routes behind /auth/* so GET reqs dont accidentally conflict w/ astro
+router.get("/another-dashboard", async (req, res) => {
+  // determine role of logged in user
+  if (req.session) {
+    const { userRoleId } = req.session;
+    const userRole = await prisma.userRole.findUnique({
+      where: { id: userRoleId },
+      include: { Account: true, Role: true },
+    });
+    if (!userRole) {
+      throw new Error("User role not found");
+      //return res.send(Pages.NoRolePage);
+    }
+    if (userRole.Role.name === "ADMINISTRATOR") {
+      return res.send(Pages.AdministratorDashboardPage);
+    } 
+    if (userRole.Role.name === "COMPANY_MANAGER") {
+      return res.send(Pages.CompanyManagerDashboardPage);
+    }
+  }
+  return res.send(Pages.CompanyManagerDashboardPage);
+
+});
+router.get("/users", async (req, res) => {
+  res.send(Pages.AdministratorUsersPage);
+})
+router.get("/settings",  (req, res) => {
+  res.send(Pages.AdministratorSettingsPage);
+});
+router.get("/billing",  (req, res) => {
+  res.send(Pages.AdministratorBillingPage);
+});
+router.get('/events', async (req, res) => {
+  if (req.session) {
+    const { userRoleId } = req.session;
+    const { type } = req.query;
+    const userRole = await prisma.userRole.findUnique({
+      where: { id: userRoleId },
+      include: { Account: true, Role: true },
+    });
+    if (!userRole) {
+      throw new Error("User role not found");
+      //return res.send(Pages.NoRolePage);
+    }
+    if (userRole.Role.name === "ADMINISTRATOR") {
+      if (!type) return res.send(Pages.AdministratorEventsPage(undefined));
+      return res.send(Pages.AdministratorEventsPage(type?.toString() as EventType));
+    } 
+    if (userRole.Role.name === "COMPANY_MANAGER") {
+      if (!type) return res.send(Pages.CompanyManagerEventsPage(undefined));
+      return res.send(Pages.CompanyManagerEventsPage(type?.toString() as EventType));
+    }
+  }
+  return res.send(Pages.AdministratorEventsPage(undefined));
+});
+router.get("/logout", authValidate,  auth.logoutHandler());
+router.get("/dashboard", authValidate);
+
 router.post(
   "/auth/login",
   redirect("/dashboard", (req) => Boolean(req.session)),
@@ -36,12 +93,13 @@ router.post(
 router.get("/auth/invite",
   auth.inviteHandler()
 );
-router.post("/auth/logout", requireAuth, auth.logoutHandler());
+router.post("/auth/logout", authValidate, auth.logoutHandler());
 
 router.get("/auth/verify", auth.verifyHandler());
 router.get("/operations", api.listHandler());
 router.get("/operation/:operationName/help", api.helpHandler());
-router.post("/operation/:operationName", requireAuth, api.adapterHandler());
+router.post("/operation/:operationName", authValidate, api.adapterHandler('post'));
+router.get("/operation/:operationName", api.adapterHandler('get'));
 
 /* NETWORKING ROUTES */
 // router.use(networkingRoute);

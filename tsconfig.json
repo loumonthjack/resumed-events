@@ -3,7 +3,7 @@
     "strict": true,
     "rootDirs": ["src"],
     "outDir": "dist",
-    "lib": ["es2021"],
+    "lib": ["es2021", "dom"],
     "target": "es2021",
     "allowImportingTsExtensions": true,
     "noEmit": true,

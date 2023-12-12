@@ -1,5 +1,6 @@
 import { ViteDevServer } from "vite";
 import { getViteConfig } from "astro/config";
+import { FULL_SERVER_URL } from "../src/server/constants";
 
 export default function viteExpressDevPlugin(path: string) {
   if (!path) {
@@ -20,6 +21,7 @@ export default function viteExpressDevPlugin(path: string) {
         console.log("vite-express-dev-plugin", path)
         
         process.env["VITE"] = "true";
+        process.env["SERVER_URL"] = FULL_SERVER_URL;
         
         try {
           // TODO type?

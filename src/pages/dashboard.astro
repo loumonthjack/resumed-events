@@ -1,7 +1,8 @@
 ---
 import BaseLayout from "../components/layout/BaseLayout.astro";
-import { NETWORKING_CONFIG } from "../server/constants";
+import { FULL_SERVER_URL, NETWORKING_CONFIG } from "../server/constants";
 import UserNavComponent from "../components/UserNav.astro";
+import { operation } from "../server/services/api.constants";
 ---
 
 <BaseLayout
@@ -47,17 +48,17 @@ import UserNavComponent from "../components/UserNav.astro";
             <span class="sr-only">Toggle sidebar</span>
           </button>
           <a
-            href="https://flowbite.com"
+            href=`${FULL_SERVER_URL}`
             class="flex items-center justify-between mr-4"
           >
             <img
-              src=`${NETWORKING_CONFIG.CDN}/assets/images/icon.png`
+              src=`${NETWORKING_CONFIG.LOGO}`
               class="mr-3 h-12"
               alt="Resumed Logo"
             />
           </a>
           <form
-            action="/operation/searchEvents"
+            action=`/operation/${operation.searchEvents}`
             method="POST"
             class="hidden md:block md:pl-2"
           >
@@ -340,7 +341,7 @@ import UserNavComponent from "../components/UserNav.astro";
                     alt="Robert image"
                   />
                   <div
-                    class="flex absolute justify-center items-center ml-6 -mt-5 w-5 h-5 bg-purple-500 rounded-full border border-white dark:border-gray-700"
+                    class="flex absolute justify-center items-center ml-6 -mt-5 w-5 h-5 bg-green-500 rounded-full border border-white dark:border-gray-700"
                   >
                     <svg
                       aria-hidden="true"

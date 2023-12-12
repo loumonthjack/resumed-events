@@ -15,6 +15,7 @@ import { FULL_SERVER_URL, NODE_ENV, STRIPE_WEBHOOK_KEY } from "./constants";
 import auth from "./services/auth";
 
 export const stripe = new Stripe(STRIPE_WEBHOOK_KEY);
+const main = async () => {
   const app = express();
 
   app.use(
@@ -30,12 +31,11 @@ export const stripe = new Stripe(STRIPE_WEBHOOK_KEY);
 
   // TODO use helmet https/cors
   // if (NODE_ENV === "production") app.use(sslRedirect());
-  if (NODE_ENV === "production") {
     app.use(
       cors({
         origin: (origin: any, callback: any) => {
           console.log("origin", origin);
-          if (!origin || [FULL_SERVER_URL].includes(origin)) {
+          if (!origin || [FULL_SERVER_URL, "http://localhost:3001"].includes(origin)) {
             callback(null, true);
           } else {
             callback(new Error("Not allowed by CORS"));
@@ -44,7 +44,6 @@ export const stripe = new Stripe(STRIPE_WEBHOOK_KEY);
         credentials: true,
       })
     );
-  }
 
   // TODO explain
   app.use(express.urlencoded({ extended: true }));
@@ -65,4 +64,6 @@ export const stripe = new Stripe(STRIPE_WEBHOOK_KEY);
   app.listen(env.PORT, () =>
     console.log(`Server listening running ${FULL_SERVER_URL}`)
   );
-export const expressServer = app;
+
+}
+main();

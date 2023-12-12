@@ -59,9 +59,9 @@ export const redirectIfLoggedIn = (req: Request, res: Response, next: NextFuncti
   next();
 };
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const authValidate = (req: Request, res: Response, next: NextFunction) => {
   if (!req.session) {
-    return res.status(400).json({ error: 'You must be logged in to perform this operation.' });
+    return res.redirect('/login/');
   }
   next();
 }

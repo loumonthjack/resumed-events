@@ -1,4 +1,4 @@
-import { Account, Invite, InviteStatus, Event, Notification, PrismaClient, RoleType, User, EventConfiguration } from "@prisma/client";
+import { Account, Invite, InviteStatus, Event, Notification, PrismaClient, RoleType, User, EventConfiguration, UserRole, Configuration } from "@prisma/client";
 import { createId as cuid } from "@paralleldrive/cuid2";
 import mailer from "./mailer";
 import { capitalizeName, getRoleName } from "../../helper";
@@ -63,7 +63,7 @@ async function removeUserRole(userId: string, userRoleId: string) {
 }
 async function createUserRole(userId: string, roleId: string, accountId: string, eventId?: string) {
   const userRoles = await prisma.userRole.findMany({
-    where: {
+    where: { 
       userId: userId,
     },
   });
@@ -544,7 +544,7 @@ async function archiveEvent(eventId: string) {
   });
 }
 
-const deleteInvite = async (inviteId: string) => {
+async function deleteInvite(inviteId: string){
   return await prisma.invite.delete({
     where: {
       id: inviteId,
@@ -588,6 +588,47 @@ async function searchAttendees(query: string, eventId: string) {
     }
   })
 }
+async function updateUser(userId: string, user: Partial<Omit<User, "id" | "updatedAt" | "createdAt">>) {
+  return await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      ...user,
+    },
+  });
+}
+async function updateUserRole(userRoleId: string, userRole: Partial<Omit<UserRole, "id" | "updatedAt" | "createdAt">>) {
+  return await prisma.userRole.update({
+    where: {
+      id: userRoleId,
+    },
+    data: {
+      ...userRole,
+    },
+  });
+}
+async function updateConfiguration(accountId: string, configuration: Partial<Omit<Configuration, "id" | "updatedAt" | "createdAt">>) {
+  return await prisma.configuration.update({
+    where: {
+      accountId: accountId,
+    },
+    data: {
+      ...configuration,
+    },
+  });
+}
+
+async function updateInvite(inviteId: string, invite: Partial<Omit<Invite, "id" | "updatedAt" | "createdAt">>) {
+  return await prisma.invite.update({
+    where: {
+      id: inviteId,
+    },
+    data: {
+      ...invite,
+    },
+  });
+}
 export default {
   search: {
     events: searchEventsByName,
@@ -604,13 +645,28 @@ export default {
     event: createEvent,
   },
   get: {
+    
+    user: (userId: User["id"]) => prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    }),
+    userRole: (userRoleId: string) => prisma.userRole.findUnique({
+      where: {
+        id: userRoleId,
+      },
+      include: {
+        Role: true,
+        Account: true,
+        Event: true,
+      },
+    }),
     // all roles for a user
     userRolesByUser: (userId: User["id"]) => prisma.userRole.findMany({
       where: {
         userId: userId,
       },
       include: {
-        User: true,
         Account: true,
         Role: true,
         Event: true,
@@ -649,61 +705,189 @@ export default {
       },
     }),
     // all events at company
-    eventsByAccount: (accountId: Account["id"]) => prisma.event.findMany({
-      where: {
-        accountId: accountId,
-      },
-      include: {
-        EventConfiguration: {
-          select: {
-            attendeeData: true,
-            showAttendeeLeaderboard: true,
-            showSlideControls: true,
-            setLimit: true,
-            enableEarlyAccess: true,
-          },
-        },
-        AttendeeInvites: {
-          select: {
-            email: true,
-            hasSent: true,
-            emailStatus: true,
-          },
-        },
-        EventAttendants: {
-          select: {
-            data: true,
-          }
-        },
-        Invites: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-            role: true,
-            status: true,
-            emailStatus: true,
-          }
-        },
-        UserRoles: {
-          select: {
-            User: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
+    eventsByAccount: (accountId: Account["id"], search?: string, pagination?: { skip: number, take: number }) => {
+      if (search) {
+        if (pagination) {
+          return prisma.event.findMany({
+            where: {
+              accountId: accountId,
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            include: {
+              EventConfiguration: {
+                select: {
+                  attendeeData: true,
+                  showAttendeeLeaderboard: true,
+                  showSlideControls: true,
+                  setLimit: true,
+                  enableEarlyAccess: true,
+                },
+              },
+              AttendeeInvites: {
+                select: {
+                  email: true,
+                  hasSent: true,
+                  emailStatus: true,
+                },
+              },
+              EventAttendants: {
+                select: {
+                  data: true,
+                }
+              },
+              Invites: {
+                select: {
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true,
+                  status: true,
+                  emailStatus: true,
+                }
+              },
+              UserRoles: {
+                select: {
+                  User: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      email: true,
+                    }
+                  },
+                  Role: {
+                    select: {
+                      name: true,
+                      permissions: true,
+                    }
+                  }
+                }
               }
             },
-            Role: {
+            skip: pagination.skip,
+            take: pagination.take,
+          });
+        }
+
+        return prisma.event.findMany({
+          where: {
+            accountId: accountId,
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          include: {
+            EventConfiguration: {
               select: {
-                name: true,
-                permissions: true,
+                attendeeData: true,
+                showAttendeeLeaderboard: true,
+                showSlideControls: true,
+                setLimit: true,
+                enableEarlyAccess: true,
+              },
+            },
+            AttendeeInvites: {
+              select: {
+                email: true,
+                hasSent: true,
+                emailStatus: true,
+              },
+            },
+            EventAttendants: {
+              select: {
+                data: true,
+              }
+            },
+            Invites: {
+              select: {
+                email: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+                status: true,
+                emailStatus: true,
+              }
+            },
+            UserRoles: {
+              select: {
+                User: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  }
+                },
+                Role: {
+                  select: {
+                    name: true,
+                    permissions: true,
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      return prisma.event.findMany({
+        where: {
+          accountId: accountId,
+        },
+        include: {
+          EventConfiguration: {
+            select: {
+              attendeeData: true,
+              showAttendeeLeaderboard: true,
+              showSlideControls: true,
+              setLimit: true,
+              enableEarlyAccess: true,
+            },
+          },
+          AttendeeInvites: {
+            select: {
+              email: true,
+              hasSent: true,
+              emailStatus: true,
+            },
+          },
+          EventAttendants: {
+            select: {
+              data: true,
+            }
+          },
+          Invites: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              status: true,
+              emailStatus: true,
+            }
+          },
+          UserRoles: {
+            select: {
+              User: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                }
+              },
+              Role: {
+                select: {
+                  name: true,
+                  permissions: true,
+                }
               }
             }
           }
         }
-      }
-    }),
+      })
+    },
     // all notifications for a user
     notificationsByUser: (userId: User["id"]) => prisma.notification.findMany({
       where: {
@@ -792,18 +976,15 @@ export default {
     inviteStatus: updateInviteStatus,
     role: switchRole,
     event: updateEvent,
-    /*user: updateUser,
+    user: updateUser,
     userRole: updateUserRole,
     configuration: updateConfiguration,
-    invite: updateInvite,*/
+    invite: updateInvite
   },
   delete: {
     userRole: removeUserRole,
     invite: deleteInvite,
     event: deleteEvent,
-    /*user: deleteUser,
-    configuration: deleteConfiguration,
-    invite: deleteInvite,*/
   },
   archive: {
     event: archiveEvent,

@@ -78,6 +78,7 @@ export const NETWORKING_CONFIG = {
   AWS_BUCKET_NAME: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/`,
   SERVER_URL: FULL_SERVER_URL,
   CDN: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/template/website/dist`,
+  LOGO: `https://s3.us-west-2.amazonaws.com/${AWS_BUCKET_NAME}/logo.png`,
 };
 
 export const STRIPE_MANAGE_LINK: string =

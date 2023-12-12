@@ -129,7 +129,7 @@ function logoutHandler() {
       },
     });
 
-    return res.sendStatus(200);
+    return res.redirect("/login");
   };
 }
 function loginHandler() {

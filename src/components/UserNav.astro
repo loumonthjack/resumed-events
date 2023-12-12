@@ -3,7 +3,14 @@ import { DEFAULT_IMAGE } from "./setUser";
 const image = DEFAULT_IMAGE;
 ---
 
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"
+  integrity="sha512-WrdC3CE9vf1nBf58JHepuWT4x24uTacky9fuzw2g/3L9JkihgwZ6Cfv+JGTtNyosOhEmttMtEZ6H3qJWfI7gIQ=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"></script>
+
 <script>
+  
   const data = JSON.parse(localStorage.getItem("user")!);
   const capitalizeName = (name: string) => {
     const parts = name.split(" ");
@@ -38,9 +45,9 @@ const image = DEFAULT_IMAGE;
     <span
       id="userName"
       class="block text-sm font-semibold text-gray-900 dark:text-white"></span>
-    <span id="userEmail" class="block text-sm text-gray-900 truncate dark:text-white"
-      ></span
-    >
+    <span
+      id="userEmail"
+      class="block text-sm text-gray-900 truncate dark:text-white"></span>
   </div>
   <ul class="py-1 text-gray-700 dark:text-gray-300" aria-labelledby="dropdown">
     <li>

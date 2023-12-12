@@ -20,9 +20,6 @@ export default defineConfig({
     plugins: [viteExpressDevPlugin("src/server/main.ts")],
     ssr: {
       noExternal: ['path-to-regexp']
-    },
-    define: {
-      'process.env.DEFAULT_IMAGE': "https://s3.amazonaws.com/app.local.resumed.website/profile_pics/default.png"
     }
   },
   server: {

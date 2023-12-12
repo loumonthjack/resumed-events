@@ -9,17 +9,18 @@ const { title, description } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <Head title={title} description={description} />
     <slot name="head" />
-    <script>
+    <script type="module">
       import invite from "../inviteRegister";
       import { getUser } from "../setUser";
       import { getCookies, cookieKeys } from "../getCookies";
       invite();
-      
+
       const cookie = getCookies();
       if (cookie) {
         for (let key in cookieKeys) {
           if (key.includes("resumed-session")) {
             const user = await getUser(key, cookie);
+            console.log(user);
             if (user) {
               localStorage.setItem("user", JSON.stringify(user));
             }
@@ -30,5 +31,6 @@ const { title, description } = Astro.props;
   </head>
   <body>
     <slot />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
   </body>
 </html>

@@ -1,39 +1,308 @@
 import { type Request, Response } from "express";
 import db, { prisma } from "./database";
-const operations = [
-    "getUser", // done
-    "createEvent", // done
-    "searchEvents", // done
-    "getEvent", // done
-    "getEvents", // done
-    "updateEvent", // done
-    "deleteEvent", // done
-    "getStaffMember",
-    "getStaffMembers", // done
-    "removeStaffMember",
-    "getEventStaffMember",
-    "getEventStaffMembers", // done
-    "createInvite", // done
-    "getRoles", // done
-    "currentRole", // done
-    "switchRole", // done
-    "getInvite",
-    "getInvites", // done
-    "getEventInvites", // done
-    "updateInvite",
-    "deleteInvite", // done
-    "createEventAttendee",
-    "searchEventAttendees",
-    "getEventAttendee",
-    "getEventAttendees", // done
-    "updateEventAttendee",
-    "deleteEventAttendee",
-    "updateUser",
-    "updateConfiguration",
-];
-function apiAdapter() {
+import { Role, RoleType, UserRole } from "@prisma/client";
+import { FULL_SERVER_URL } from "../constants";
+import { GetMethodOperations, PostMethodOperations,  getMethodOperations,  operation, operations, postMethodOperations } from "./api.constants";
+import { capitalizeName, getRoleName } from "../../helper";
+
+const ERROR_MESSAGE = `Operation not found, please check the operations list at ${FULL_SERVER_URL}/operations`;
+const NOT_AUTHORIZED_MESSAGE = "You are not authorized to perform this operation. Please try logging in again or contact support.";
+const requiredFieldsMessage = (missingFields: string[]) => `Missing required fields: ${missingFields}`;
+
+const authorizedUsers = (userRole: UserRole & { Role: Role }, authorizedRoles: RoleType[]) => {
+    if (!userRole) return false;
+    return authorizedRoles.includes(userRole.Role.name as RoleType);
+}
+
+const getOperations = async (
+    req: Request,
+    res: Response,
+    userRole: UserRole & { Role: Role },
+    operationName: GetMethodOperations,
+) => {
+    switch (operationName) {
+        case operation.getUser: {
+            const user = await db.get.user(userRole.userId);
+            console.log("user", user)
+            return res.json({ user });
+        }
+        case operation.getInvites: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.COMPANY_AUDITOR]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const invites = await db.get.invitesByAccount(userRole.accountId);
+            return res.json({ invites });
+        }
+        case operation.getEventAttendees: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.COMPANY_AUDITOR, RoleType.EVENT_AUDITOR, RoleType.EVENT_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { eventId } = req.body;
+            if (authorizedUsers(userRole, [RoleType.EVENT_AUDITOR, RoleType.EVENT_MANAGER])) {
+                const attendees = await db.get.attendeesByEvent(userRole.eventId!);
+                return res.json({ attendees });
+            }
+            if (!eventId) return res.status(400).json({ error: requiredFieldsMessage(["eventId"]) });
+            const attendees = await db.get.attendeesByEvent(eventId);
+            return res.json({ attendees });
+        }
+        case operation.getEventStaffMembers: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.COMPANY_AUDITOR, RoleType.EVENT_AUDITOR, RoleType.EVENT_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { eventId } = req.body;
+            if (authorizedUsers(userRole, [RoleType.EVENT_AUDITOR, RoleType.EVENT_MANAGER])) {
+                const staffMembers = await db.get.userRolesByEvent(userRole.eventId!);
+                return res.json({ staffMembers });
+            }
+            if (!eventId) return res.status(400).json({ error: requiredFieldsMessage(["eventId"]) });
+            const staffMembers = await db.get.userRolesByEvent(eventId);
+            return res.json({ staffMembers });
+
+        }
+        case operation.getStaffMembers: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.COMPANY_AUDITOR]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const staffMembers = await db.get.userRolesByAccount(userRole.accountId);
+            return res.json({ staffMembers });
+        }
+        case operation.getRoles: {
+            const roles = await db.get.userRolesByUser(userRole.userId);
+            return res.json({ roles: roles.map(role => ({ ...role, Role: { name: getRoleName(role.Role.name as RoleType) } })) });
+        }
+        case operation.getEvents: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.COMPANY_AUDITOR]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { search, filter } = req.query;
+            if (filter) {
+                if (filter.toString() === "upcoming"){
+                    const upcoming = await prisma.event.findMany({
+                        where: {
+                            accountId: userRole.accountId,
+                            startDate: {
+                                gt: new Date()
+                            }
+                        }
+                    });
+                    return res.json({ events: upcoming });
+                }else if (filter.toString() === "archived"){
+                    const past = await prisma.event.findMany({
+                        where: {
+                            accountId: userRole.accountId,
+                            startDate: {
+                                lt: new Date()
+                            }
+                        }
+                    });
+                    return res.json({ events: past });
+                }
+            }
+            const events = await db.get.eventsByAccount(userRole.accountId, search as string);
+            return res.json({ events });
+        }
+        case operation.getEvent: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.COMPANY_AUDITOR, RoleType.EVENT_AUDITOR, RoleType.EVENT_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { eventId } = req.query;
+            if (authorizedUsers(userRole, [RoleType.EVENT_AUDITOR, RoleType.EVENT_MANAGER])) {
+                const event = await db.get.getEventById(userRole.eventId!);
+                return res.json({ event });
+            }
+            if (!eventId) return res.status(400).json({ error: requiredFieldsMessage(["eventId"]) });
+            const event = await db.get.getEventById(eventId.toString());
+            return res.json({ event });
+        }
+        case operation.currentRole: {
+            const role = await db.get.userRole(userRole.id);
+            return res.json({ userRole: {
+                ...role,
+                Role: {
+                    name: getRoleName(role?.Role.name as RoleType),
+                }
+            } });
+        }
+    }
+}
+
+const postOperations = async (
+    req: Request,
+    res: Response,
+    userRole: UserRole & { Role: Role },
+    operationName: PostMethodOperations,
+) => {
+    if (!userRole) return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+    switch (operationName) {
+        case operation.updateUser: {
+            const { firstName, lastName, email, profilePicture } = req.body;
+            const updatedUser = await db.update.user(userRole.userId, { firstName, lastName, email, profilePicture });
+            return res.json({ user: updatedUser });
+        }
+        case operation.searchEventAttendees: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.COMPANY_AUDITOR, RoleType.EVENT_AUDITOR, RoleType.EVENT_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { search } = req.body;
+            if (!search) return res.status(400).json({ error: requiredFieldsMessage(["search"]) });
+            const attendees = await db.search.attendees(search, userRole.eventId!);
+            return res.json({ attendees });
+
+        }
+        case operation.searchEvents: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.COMPANY_AUDITOR]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { search, pagination } = req.body;
+            if (!search) return res.status(400).json({ error: requiredFieldsMessage(["search"]) });
+            const events = await db.get.eventsByAccount(userRole.accountId, search, pagination);
+            return res.json({ events });
+        }
+        case operation.deleteEvent: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { eventId } = req.body;
+            if (!eventId) return res.status(400).json({ error: requiredFieldsMessage(["eventId"]) });
+            const event = await db.archive.event(eventId);
+            return res.json({ event });
+        }
+        case operation.deleteInvite: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { inviteId } = req.body;
+            if (!inviteId) return res.status(400).json({ error: requiredFieldsMessage(["inviteId"]) });
+            const invite = await db.delete.invite(inviteId);
+            return res.json({ invite });
+        }
+        case operation.switchRole: {
+            const { userRoleId } = req.body;
+            if (!userRoleId) return res.status(400).json({ error: requiredFieldsMessage(["userRoleId"]) });
+            const updateRole = await db.update.role(userRole.userId!, userRoleId);
+            const newRole = await prisma.userRole.findUnique({
+                where: {
+                    id: updateRole.id
+                },
+                include: {
+                    Role: true
+                }
+            });
+            return res.json({ role: newRole?.Role.name });
+        }
+        case operation.createEvent: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+
+            // Extract fields from request body
+            const { name, description, startDate, endDate, logo, portalBackgroundImage, landingBackgroundImage, theme, configuration, invitees } = req.body;
+
+            // Validate required fields
+            const requiredFields = { name, description, startDate, endDate, configuration, invitees };
+            const missingFields = Object.entries(requiredFields)
+                .filter(([_, value]) => !value)
+                .map(([key]) => key);
+            if (missingFields.length > 0) {
+                return res.status(400).json({ error: requiredFieldsMessage(missingFields) });
+            }
+
+            // Create event
+            const event = await db.create.event({
+                name,
+                description,
+                startDate,
+                endDate,
+                logo,
+                portalBackgroundImage,
+                landingBackgroundImage,
+                theme,
+                configuration,
+                invitees,
+                accountId: userRole.accountId
+            });
+            res.json({ eventId: event.id });
+        }
+        case operation.createInvite: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { email, firstName, lastName, role, eventId } = req.body;
+            const requiredFields = { email, role, eventId };
+            const missingFields = Object.entries(requiredFields)
+                .filter(([_, value]) => !value)
+                .map(([key]) => key);
+            if (missingFields.length > 0) return res.status(400).json({ error: requiredFieldsMessage(missingFields) });
+
+            const invite = await db.create.invite({
+                email,
+                firstName,
+                lastName,
+                role,
+                accountId: userRole.accountId,
+                eventId
+            });
+            return res.json({ inviteId: invite.id });
+
+        }
+        case operation.updateEvent: {
+            const isAuthorized = authorizedUsers(userRole, [RoleType.ADMINISTRATOR, RoleType.COMPANY_MANAGER, RoleType.EVENT_MANAGER]);
+            if (!isAuthorized) {
+                return res.status(401).json({ error: NOT_AUTHORIZED_MESSAGE });
+            }
+            const { eventId, name, description, startDate, endDate, logo, portalBackgroundImage, landingBackgroundImage, theme, configuration, invitees } = req.body;
+            if (authorizedUsers(userRole, [RoleType.EVENT_MANAGER])) {
+                const updatedEvent = await db.update.event(userRole.eventId!, {
+                    name,
+                    description,
+                    startDate,
+                    endDate,
+                    logo,
+                    portalBackgroundImage,
+                    landingBackgroundImage,
+                    theme,
+                    configuration,
+                    invitees
+                });
+                return res.json({ event: updatedEvent });
+            }
+            if (!eventId) return res.status(400).json({ error: requiredFieldsMessage(["eventId"]) });
+            const updatedEvent = await db.update.event(eventId, {
+                name,
+                description,
+                startDate,
+                endDate,
+                logo,
+                portalBackgroundImage,
+                landingBackgroundImage,
+                theme,
+                configuration,
+                invitees
+            });
+            return res.json({ event: updatedEvent });
+        }
+        default:
+            return res.status(404).json({ error: "Operation not found, please check the operations list at https://api.resumed.events/operations" });
+    }
+}
+
+function apiAdapter(method: "get" | "post") {
     return async (req: Request, res: Response) => {
-        const userRole = await prisma.userRole.findUnique({
+        if(!req.session?.userRoleId) return res.status(401).json({ error: "ERROR_314: You are not authorized to perform this operation." });
+        const userRole: UserRole & { Role: Role } | null = await prisma.userRole.findUnique({
             where: {
                 id: req.session?.userRoleId
             },
@@ -41,265 +310,31 @@ function apiAdapter() {
                 Role: true
             }
         });
-        switch (req.params.operationName) {
-            case "getUser":{
-               const user = await prisma.user.findUnique({
-                    where: {
-                        id: userRole?.userId
-                    }
-                });
-                return res.json({ user });
-            }
-            case "searchEventAttendees": {
-                const { search } = req.body;
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_AUDITOR" || userRole?.Role.name === "COMPANY_MANAGER" || userRole?.Role.name === "EVENT_AUDITOR" || userRole?.Role.name === "EVENT_MANAGER") {
-                    if (!search) return res.status(400).json({ error: "Missing required fields: search" });
-                    const attendees = await db.search.attendees(search, userRole?.eventId!);
-                    return res.json({ attendees });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "searchEvents": {
-                const { search } = req.body;
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_AUDITOR" || userRole?.Role.name === "COMPANY_MANAGER") {
-                    if (!search) return res.status(400).json({ error: "Missing required fields: search" });
-                    const events = await db.search.events(search, userRole?.accountId!);
-                    return res.json({ events });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "deleteEvent": {
-                const { eventId } = req.body;
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_MANAGER") {
-                    if (!eventId) return res.status(400).json({ error: "Missing required fields: eventId" });
-                    const event = await db.archive.event(eventId);
-                    return res.json({ event });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "deleteInvite": {
-                const { inviteId } = req.body;
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_MANAGER") {
-                    if (!inviteId) return res.status(400).json({ error: "Missing required fields: inviteId" });
-                    const invite = await db.delete.invite(inviteId);
-                    return res.json({ invite });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "getEventInvites": {
-                const { eventId } = req.body;
-                if (!eventId) return res.status(400).json({ error: "Missing required fields: eventId, inviteId" });
-                const invites = await prisma.invite.findMany({
-                    where: {
-                        eventId
-                    }
-                });
-                return res.json({ invites });
-            }
-            case "getInvites": {
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_AUDITOR" || userRole?.Role.name === "COMPANY_MANAGER") {
-                    const invites = await db.get.invitesByAccount(userRole.accountId);
-                    return res.json({ invites });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "getEventAttendees": {
-                const { eventId } = req.body;
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_AUDITOR" || userRole?.Role.name === "COMPANY_MANAGER" || userRole?.Role.name === "EVENT_AUDITOR" || userRole?.Role.name === "EVENT_MANAGER") {
-                    if (userRole?.Role.name === "EVENT_AUDITOR" || userRole?.Role.name === "EVENT_MANAGER") {
-                        const attendees = await db.get.attendeesByEvent(userRole.eventId!);
-                        return res.json({ attendees });
-                    }
-                    if (!eventId) return res.status(400).json({ error: "Missing required fields: eventId" });
-                    const attendees = await db.get.attendeesByEvent(eventId);
-                    return res.json({ attendees });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "getEventStaffMembers": {
-                const { eventId } = req.body;
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_AUDITOR" || userRole?.Role.name === "COMPANY_MANAGER" || userRole?.Role.name === "EVENT_AUDITOR" || userRole?.Role.name === "EVENT_MANAGER") {
-                    if (userRole?.Role.name === "EVENT_AUDITOR" || userRole?.Role.name === "EVENT_MANAGER") {
-                        const staffMembers = await db.get.userRolesByEvent(userRole.eventId!);
-                        return res.json({ staffMembers });
-                    }
-                    if (!eventId) return res.status(400).json({ error: "Missing required fields: eventId" });
-                    const staffMembers = await db.get.userRolesByEvent(eventId);
-                    return res.json({ staffMembers });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "getStaffMembers": {
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_AUDITOR" || userRole?.Role.name === "COMPANY_MANAGER") {
-                    const staffMembers = await db.get.userRolesByAccount(userRole.accountId);
-                    return res.json({ staffMembers });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "getRoles": {
-                const roles = await prisma.userRole.findMany({
-                    where: {
-                        userId: userRole?.userId
-                    },
-                    include: {
-                        Role: true
-                    }
-                });
-                return res.json({ roles });
-            }
-            case "currentRole": {
-                if (userRole) {
-                    const getRole = await prisma.userRole.findUnique({
-                        where: {
-                            id: userRole.id
-                        },
-                        include: {
-                            Role: true,
-                            Account: true
-                        }
-                    });
-                    return res.json({ userRole: getRole });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "switchRole": {
-                const { userRoleId } = req.body;
-                if (!userRoleId) return res.status(400).json({ error: "Missing required fields: userRoleId" });
-                const updateRole = await db.update.role(userRole?.userId!, userRoleId);
-                const newRole = await prisma.userRole.findUnique({
-                    where: {
-                        id: updateRole.id
-                    },
-                    include: {
-                        Role: true
-                    }
-                });
-                return res.json({ role: newRole?.Role.name });
-            }
-            case "createEvent": {
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_MANAGER") {
-                    const { name, description, startDate, endDate, logo, portalBackgroundImage, landingBackgroundImage, theme, configuration, invitees } = req.body;
-                    if (!name || !description || !startDate || !endDate || !configuration || !invitees) {
-                        let missingFields = [];
-                        if (!name) missingFields.push("name");
-                        if (!description) missingFields.push("description");
-                        if (!startDate) missingFields.push("startDate");
-                        if (!endDate) missingFields.push("endDate");
-                        if (!theme) missingFields.push("theme");
-                        if (!configuration) missingFields.push("configuration");
-                        if (!invitees) missingFields.push("invitees");
-                        return res.status(400).json({ error: `Missing required fields: ${missingFields}` });
-                    }
+        if (!userRole) return res.status(401).json({ error: "ERROR_316: You are not authorized to perform this operation." });
+        
+        const { operationName } = req.params;
+        if (!operations.includes(operationName)) return res.status(404).json({ error: "ERROR_318: " + ERROR_MESSAGE });
 
-                    const event = await db.create.event({
-                        name,
-                        description,
-                        startDate,
-                        endDate,
-                        logo,
-                        portalBackgroundImage,
-                        landingBackgroundImage,
-                        theme,
-                        configuration,
-                        invitees,
-                        accountId: userRole.accountId
-                    });
-                    return res.json({ eventId: event.id });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "getEvents": {
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_AUDITOR" || userRole?.Role.name === "COMPANY_MANAGER") {
-                    const events = await db.get.eventsByAccount(userRole.accountId);
-                    return res.json({ events });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "getEvent": {
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_AUDITOR" || userRole?.Role.name === "COMPANY_MANAGER" || userRole?.Role.name === "EVENT_AUDITOR" || userRole?.Role.name === "EVENT_MANAGER") {
-                    // check if EVENT_AUDITOR or EVENT_MANAGER has access to event
-                    const { eventId } = req.body;
-                    if (userRole?.Role.name === "EVENT_AUDITOR" || userRole?.Role.name === "EVENT_MANAGER") {
-                        const event = await db.get.getEventById(userRole.eventId!);
-                        return res.json({ event });
-                    }
-                    if (!eventId) return res.status(400).json({ error: "Missing required fields: eventId" });
-                    const event = await db.get.getEventById(eventId);
-                    return res.json({ event });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "createInvite": {
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_MANAGER") {
-                    const { email, firstName, lastName, role, eventId } = req.body;
-                    if (!email || !role) {
-                        let missingFields = [];
-                        if (!email) missingFields.push("email");
-                        if (!role) missingFields.push("role");
-                        if (!eventId) missingFields.push("eventId");
-                        return res.status(400).json({ error: `Missing required fields: ${missingFields}` });
-                    }
-                    const invite = await db.create.invite({
-                        email,
-                        firstName,
-                        lastName,
-                        role,
-                        accountId: userRole.accountId,
-                        eventId
-                    });
-                    return res.json({ inviteId: invite.id });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-            }
-            case "updateEvent": {
-                if (userRole?.Role.name === "ADMINISTRATOR" || userRole?.Role.name === "COMPANY_MANAGER" || userRole?.Role.name === "EVENT_MANAGER") {
-                    const { eventId, name, description, startDate, endDate, logo, portalBackgroundImage, landingBackgroundImage, theme, configuration, invitees } = req.body;
-                    if (userRole?.Role.name === "EVENT_MANAGER") {
-                        const updatedEvent = await db.update.event(userRole.eventId!, {
-                            name,
-                            description,
-                            startDate,
-                            endDate,
-                            logo,
-                            portalBackgroundImage,
-                            landingBackgroundImage,
-                            theme,
-                            configuration,
-                            invitees
-                        });
-                        return res.json({ event: updatedEvent });
-                    }
-                    if (!eventId) return res.status(400).json({ error: "Missing required fields: eventId" });
-                    const updatedEvent = await db.update.event(eventId, {
-                        name,
-                        description,
-                        startDate,
-                        endDate,
-                        logo,
-                        portalBackgroundImage,
-                        landingBackgroundImage,
-                        theme,
-                        configuration,
-                        invitees
-                    });
-                    return res.json({ event: updatedEvent });
-                }
-                return res.status(401).json({ error: "You are not authorized to perform this operation." });
-
-            }
-            default:
-                return res.status(404).json({ error: "Operation not found, please check the operations list at https://api.resumed.events/operations" });
+        if (method === 'get') {
+            if (!getMethodOperations.includes(operationName)) return res.status(404).json({ error: "ERROR_320: " + ERROR_MESSAGE });
+            return getOperations(req, res, userRole, operationName as GetMethodOperations);
         }
+
+        if (method === 'post') {
+            if (!postMethodOperations.includes(operationName)) return res.status(404).json({ error: "ERROR_324: " + ERROR_MESSAGE });
+            return postOperations(req, res, userRole, operationName as PostMethodOperations);
+        }
+        return res.status(404).json({ error: "ERROR_327:" + ERROR_MESSAGE });
     };
 }
 
 function helpHandler() {
     return async (req: Request, res: Response) => {
         const { operationName } = req.params;
-        if (!operations.includes(operationName)) return res.json({ error: "Operation not found, please check the operations list at https://api.resumed.events/operations" });
+        if (!operations.includes(operationName)) return res.json({ error: "ERROR_334: " + ERROR_MESSAGE });
         for (const operation of operations) {
             if (operation === operationName) {
-                const url = `https://api.resumed.events/operation/${operationName}`
+                const url = `${FULL_SERVER_URL}/operation/${operationName}`
                 if (operation === "createEvent") {
                     return res.json({
                         operation,
@@ -335,13 +370,13 @@ function helpHandler() {
                                         "email": "event_staff_manager@gmail.com",
                                         "firstName": "Event",
                                         "lastName": "Staff Manager",
-                                        "role": "EVENT_MANAGER"
+                                        "role": RoleType.EVENT_MANAGER
                                     },
                                     {
                                         "email": "event_staff_supervisor@gmail.com",
                                         "firstName": "Event",
                                         "lastName": "Staff Supervisor",
-                                        "role": "EVENT_AUDITOR"
+                                        "role": RoleType.EVENT_AUDITOR
                                     },
                                     {
                                         "email": "event_attendee@gmail.com",
@@ -361,8 +396,8 @@ function helpHandler() {
                         exampleRequest: {
                             request: {
                                 url,
-                                method: "POST",
-                                body: {
+                                method: "GET",
+                                query: {
                                     eventId: "2"
                                 }
                             },
@@ -399,13 +434,13 @@ function helpHandler() {
                                             email: "event_staff_manager@gmail.com",
                                             firstName: "Event",
                                             lastName: "Staff Manager",
-                                            role: "EVENT_MANAGER"
+                                            role: RoleType.EVENT_MANAGER
                                         },
                                         {
                                             email: "event_staff_auditor@gmail.com",
                                             firstName: "Event",
                                             lastName: "Staff Auditor",
-                                            role: "EVENT_AUDITOR"
+                                            role: RoleType.EVENT_AUDITOR
                                         },
                                         {
                                             email: "event_attendee@gmail.com",
@@ -423,7 +458,7 @@ function helpHandler() {
                         exampleRequest: {
                             request: {
                                 url,
-                                method: "POST",
+                                method: "GET",
                             },
                             note: "The accountId is loaded from logged in user and returns events that owned by account. This operation will return the events.",
                         },
@@ -456,7 +491,7 @@ function helpHandler() {
                                                 email: "event_staff_manager@gmail.com",
                                                 firstName: "Event",
                                                 lastName: "Staff Manager",
-                                                role: "EVENT_MANAGER"
+                                                role: RoleType.EVENT_MANAGER
                                             },
                                             {
                                                 email: "event_attendee@gmail.com",
@@ -497,13 +532,13 @@ function helpHandler() {
                                                 email: "event_staff_manager@gmail.com",
                                                 firstName: "Event",
                                                 lastName: "Staff Manager",
-                                                role: "EVENT_MANAGER"
+                                                role: RoleType.EVENT_MANAGER
                                             },
                                             {
                                                 email: "event_staff_auditor@gmail.com",
                                                 firstName: "Event",
                                                 lastName: "Staff Auditor",
-                                                role: "EVENT_AUDITOR"
+                                                role: RoleType.EVENT_AUDITOR
                                             },
                                             {
                                                 email: "event_attendee@gmail.com",
@@ -571,13 +606,13 @@ function helpHandler() {
                                             email: "event_staff_manager@gmail.com",
                                             firstName: "Event",
                                             lastName: "Staff Manager",
-                                            role: "EVENT_MANAGER"
+                                            role: RoleType.EVENT_MANAGER
                                         },
                                         {
                                             email: "event_staff_auditor@gmail.com",
                                             firstName: "Event",
                                             lastName: "Staff Auditor",
-                                            role: "EVENT_AUDITOR"
+                                            role: RoleType.EVENT_AUDITOR
                                         },
                                         {
                                             email: "event_attendee@gmail.com",
@@ -600,11 +635,44 @@ function helpHandler() {
 
 function listHandler() {
     return async (req: Request, res: Response) => {
+        const search = req.query.search;
+        const url = (operation: GetMethodOperations | PostMethodOperations) => `${FULL_SERVER_URL}/operation/${operation}`;
+        if (search) {
+            if (search === "get" || search === "get".toUpperCase()) return res.json({
+                operations: getMethodOperations.map(operation => {
+                    return {
+                        operation,
+                        url: url(operation),
+                        method: "GET"
+                    }
+                })
+            });
+            if (search === "post" || search === "post".toUpperCase()) return res.json({
+                operations: postMethodOperations.map(operation => {
+                    return {
+                        operation,
+                        url: url(operation),
+                        method: "POST"
+                    }
+                })
+            });
+            const filteredOperations = operations.filter(operation => operation.includes(search as string));
+            return res.json({
+                operations: filteredOperations.map(operation => {
+                    return {
+                        operation,
+                        url: url(operation),
+                        method: getMethodOperations.includes(operation) ? "GET" : "POST"
+                    }
+                })
+            });
+        }
         res.json({
             operations: operations.map(operation => {
                 return {
                     operation,
-                    url: `https://api.resumed.events/operation/${operation}`
+                    url: url(operation),
+                    method: getMethodOperations.includes(operation) ? "GET" : "POST"
                 }
             })
         });
