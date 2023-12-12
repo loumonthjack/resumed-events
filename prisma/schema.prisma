@@ -132,29 +132,6 @@ model Account {
   UserRoles     UserRole[]
   Configuration Configuration?
 }
-
-model Event {
-  id                     String               @id @unique
-  name                   String
-  logo                   String?
-  portalBackgroundImage  String?
-  landingBackgroundImage String?
-  startDate              DateTime?
-  endDate                DateTime?
-  createdAt              DateTime             @default(now())
-  description            String?
-  isArchived             Boolean              @default(false)
-  externalId             String?              @unique
-  theme                  Theme?               @default(LIGHT)
-  EventAttendants        EventAttendant[]
-  EventConfiguration     EventConfiguration[]
-  AttendeeInvites        AttendeeNotify[]
-  Account                Account              @relation(fields: [accountId], references: [id])
-  accountId              String
-  UserRoles              UserRole[]
-  Invites                Invite[]
-}
-
 enum SupportPriorityEnum {
   email
   zendesk
@@ -206,12 +183,115 @@ enum Theme {
   DARK
 }
 
+model Event {
+  id                     String               @id @unique
+  name                   String
+  logo                   String?
+  portalBackgroundImage  String?
+  landingBackgroundImage String?
+  startDate              DateTime?
+  startTime              DateTime?
+  endTime                DateTime?
+  endDate                DateTime?
+  createdAt              DateTime             @default(now())
+  description            String?
+  isArchived             Boolean              @default(false)
+  externalId             String?              @unique
+  theme                  Theme?               @default(LIGHT)
+  EventAttendants        EventAttendant[]
+  EventConfiguration     EventConfiguration[]
+  AttendeeInvites        AttendeeNotify[]
+  Account                Account              @relation(fields: [accountId], references: [id])
+  accountId              String
+  UserRoles              UserRole[]
+  Invites                Invite[]
+  EventGame              EventGame            @relation(fields: [eventGameId], references: [id])
+  eventGameId            String               @unique
+}
+
+enum EventGameStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model EventGame {
+  id           String        @id @default(uuid())
+  Event        Event?
+  eventId      String
+  GameSessions GameSession[]
+}
+
+model GameConfiguration {
+  id           String        @id @default(uuid())
+  minPlayers   Int           @default(2)
+  maxPlayers   Int?          @default(200)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime?     @updatedAt
+  GameSessions GameSession[]
+}
+
+model EventGameQuestion {
+  id            String      @id @default(uuid())
+  question      String
+  answer        String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime?   @updatedAt
+  GameSession   GameSession @relation(fields: [gameSessionId], references: [id])
+  gameSessionId String
+}
+
+model AttendeePairingSession {
+  id             String           @id @default(uuid())
+  EventAttendees EventAttendant[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime?        @updatedAt
+  GameSession    GameSession      @relation(fields: [gameSessionId], references: [id])
+  gameSessionId  String
+}
+
+model AttendeeGameResults {
+  id               String         @id @default(uuid())
+  data             Json           @default("{}")
+  isWinner         Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime?      @updatedAt
+  EventAttendant   EventAttendant @relation(fields: [eventAttendantId], references: [id])
+  eventAttendantId String
+  GameSession      GameSession    @relation(fields: [gameSessionId], references: [id])
+  gameSessionId    String
+}
+
+enum EventGameName {
+  ROULETTE_PAIRING
+  VISUAL_BUSINESS_CARD
+}
+
+model GameSession {
+  id                     String                   @id @default(uuid())
+  timeLimit              Int?
+  name                   EventGameName
+  isLive                 Boolean                  @default(false)
+  status                 EventGameStatus          @default(PENDING)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime?                @updatedAt
+  GameConfig             GameConfiguration        @relation(fields: [gameConfigId], references: [id])
+  gameConfigId           String
+  EventGame              EventGame                @relation(fields: [eventGameId], references: [id])
+  eventGameId            String
+  AttendeeGameResults    AttendeeGameResults[]
+  EventGameQuestions     EventGameQuestion[]
+  AttendeePairingSession AttendeePairingSession[]
+}
+
 model EventAttendant {
-  id         String @id @default(uuid())
-  data       Json   @default("{}")
-  externalId String @unique
-  event      Event  @relation(fields: [eventId], references: [id])
-  eventId    String
+  id                      String                   @id @default(uuid())
+  data                    Json                     @default("{}")
+  externalId              String                   @unique
+  Event                   Event                    @relation(fields: [eventId], references: [id])
+  eventId                 String
+  AttendeePairingSessions AttendeePairingSession[]
+  AttendeeGameResults     AttendeeGameResults[]
 }
 
 // for attendee that fill out email on coming soon page, notify them when event is live if event has started and paid
@@ -220,7 +300,7 @@ model AttendeeNotify {
   email       String
   hasSent     Boolean     @default(false)
   emailStatus EmailStatus @default(NOT_SENT)
-  externalId  String?      @unique
+  externalId  String?     @unique
   event       Event       @relation(fields: [eventId], references: [id])
   eventId     String
   createdAt   DateTime    @default(now())
